@@ -1,0 +1,18 @@
+name: Generate blog images
+
+on:
+  schedule:
+    - cron: "30 6 * * *"
+  workflow_dispatch:
+
+jobs:
+  generate-blog-images:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate missing blog artwork
+        run: |
+          curl --fail --show-error --silent \
+            --request POST \
+            --header "Content-Type: application/json" \
+            --data '{"limit":10}' \
+            "https://qfqowhetrxritoyjzzcz.supabase.co/functions/v1/generate-blog-images"
