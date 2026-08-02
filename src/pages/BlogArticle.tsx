@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 import { blogPosts, formatBlogDate, type BlogPost } from "@/data/blog";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { blogImageUrl, handleBlogImageError } from "@/lib/blogImages";
 
 const SITE = "https://trypost.ai";
 
@@ -47,6 +48,8 @@ const BlogArticle = () => {
       : sorted.filter((p) => p.slug !== article.slug).slice(0, 3);
 
   const url = `${SITE}/blog/${article.slug}`;
+  const heroImage = blogImageUrl(article.slug, article.publishedAt, "hero");
+  const ogImage = blogImageUrl(article.slug, article.publishedAt, "og");
   const shareText = encodeURIComponent(article.title);
 
   return (
@@ -59,11 +62,15 @@ const BlogArticle = () => {
         <meta property="og:description" content={article.excerpt.slice(0, 158)} />
         <meta property="og:type" content="article" />
         <meta property="og:url" content={url} />
+        <meta property="og:image" content={ogImage} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
         <meta property="article:published_time" content={article.publishedAt} />
         <meta property="article:modified_time" content={article.updatedAt} />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={article.title} />
         <meta name="twitter:description" content={article.excerpt.slice(0, 158)} />
+        <meta name="twitter:image" content={ogImage} />
         <script type="application/ld+json">
           {JSON.stringify({
             "@context": "https://schema.org",
@@ -72,6 +79,7 @@ const BlogArticle = () => {
             description: article.excerpt,
             datePublished: article.publishedAt,
             dateModified: article.updatedAt,
+            image: [ogImage],
             author: { "@type": "Organization", name: article.author },
             publisher: {
               "@type": "Organization",
@@ -129,6 +137,15 @@ const BlogArticle = () => {
             </>
           )}
         </p>
+
+        <img
+          src={heroImage}
+          onError={handleBlogImageError}
+          alt={article.title}
+          width={1600}
+          height={900}
+          className="w-full aspect-[16/9] object-cover rounded-3xl border-2 border-border mb-10"
+        />
 
         <article className="prose prose-lg max-w-none">{renderContent(article.content)}</article>
 
@@ -196,8 +213,18 @@ const BlogArticle = () => {
               <Link
                 key={p.slug}
                 to={`/blog/${p.slug}`}
-                className="group bg-card border-2 border-border rounded-2xl p-5 hover:border-primary transition-colors"
+                className="group bg-card border-2 border-border rounded-2xl hover:border-primary transition-colors overflow-hidden"
               >
+                <img
+                  src={blogImageUrl(p.slug, p.publishedAt, "card")}
+                  onError={handleBlogImageError}
+                  alt={p.title}
+                  loading="lazy"
+                  width={800}
+                  height={450}
+                  className="w-full aspect-[16/9] object-cover"
+                />
+                <div className="p-5">
                 <div className="text-xs text-primary uppercase tracking-wide mb-2">{p.category}</div>
                 <span className="block font-medium group-hover:text-primary transition-colors">
                   {p.title}
@@ -205,6 +232,7 @@ const BlogArticle = () => {
                 <span className="inline-flex items-center gap-1 text-xs text-primary mt-3">
                   Read <ArrowRight className="w-3 h-3" />
                 </span>
+                </div>
               </Link>
             ))}
           </div>

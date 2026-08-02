@@ -5,6 +5,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { blogPosts, formatBlogDate } from "@/data/blog";
 import { ArrowRight, Search } from "lucide-react";
+import { blogImageUrl, handleBlogImageError } from "@/lib/blogImages";
 
 const SITE = "https://trypost.ai";
 
@@ -112,8 +113,17 @@ const Blog = () => {
         {isDefaultView && featured && (
           <Link
             to={`/blog/${featured.slug}`}
-            className="group block bg-card p-8 rounded-3xl border-2 border-border hover:border-primary transition-colors mb-8"
+            className="group block bg-card rounded-3xl border-2 border-border hover:border-primary transition-colors mb-8 overflow-hidden"
           >
+            <img
+              src={blogImageUrl(featured.slug, featured.publishedAt, "hero")}
+              onError={handleBlogImageError}
+              alt={featured.title}
+              width={1600}
+              height={900}
+              className="w-full aspect-[16/9] object-cover"
+            />
+            <div className="p-8">
             <div className="text-xs font-medium text-primary mb-2 uppercase tracking-wide">
               Latest · {featured.category} · {featured.readTime}
             </div>
@@ -124,6 +134,7 @@ const Blog = () => {
             <span className="inline-flex items-center gap-1 text-sm font-medium text-primary">
               Read post <ArrowRight className="w-4 h-4" />
             </span>
+            </div>
           </Link>
         )}
 
@@ -135,8 +146,18 @@ const Blog = () => {
               <Link
                 key={p.slug}
                 to={`/blog/${p.slug}`}
-                className="group bg-card p-6 rounded-2xl border-2 border-border hover:border-primary transition-colors"
+                className="group bg-card rounded-2xl border-2 border-border hover:border-primary transition-colors overflow-hidden"
               >
+                <img
+                  src={blogImageUrl(p.slug, p.publishedAt, "card")}
+                  onError={handleBlogImageError}
+                  alt={p.title}
+                  loading="lazy"
+                  width={800}
+                  height={450}
+                  className="w-full aspect-[16/9] object-cover"
+                />
+                <div className="p-6">
                 <div className="text-xs font-medium text-primary mb-2 uppercase tracking-wide">
                   {p.category} · {p.readTime} ·{" "}
                   <time dateTime={p.publishedAt}>{formatBlogDate(p.publishedAt)}</time>
@@ -148,6 +169,7 @@ const Blog = () => {
                 <span className="inline-flex items-center gap-1 text-sm font-medium text-primary">
                   Read post <ArrowRight className="w-4 h-4" />
                 </span>
+                </div>
               </Link>
             ))}
           </div>
