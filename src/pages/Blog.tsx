@@ -169,6 +169,7 @@ const Blog = () => {
                 <span className="inline-flex items-center gap-1 text-sm font-medium text-primary">
                   Read post <ArrowRight className="w-4 h-4" />
                 </span>
+                </div>
               </Link>
             ))}
           </div>
