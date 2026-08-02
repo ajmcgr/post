@@ -9,8 +9,8 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
-    "predev": "bunx tsx scripts/generate-sitemap.ts",
-    "prebuild": "bunx tsx scripts/generate-sitemap.ts"
+    "predev": "bunx tsx scripts/generate-sitemap.ts && bunx tsx scripts/generate-blog-index.ts",
+    "prebuild": "bunx tsx scripts/generate-sitemap.ts && bunx tsx scripts/generate-blog-index.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
