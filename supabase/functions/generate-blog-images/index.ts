@@ -187,21 +187,15 @@ async function generateImage(apiKey: string, prompt: string, slug: string): Prom
     'This must not look like a generic blue gradient swoosh — commit to the composition and motif above.',
   ].join(' ');
 
-  const res = await fetch(`${GEMINI}/${IMAGE_MODEL}:generateContent?key=${apiKey}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ role: 'user', parts: [{ text: `${prompt}\n\n${style}` }] }],
-      generationConfig: {
-        responseModalities: ['TEXT', 'IMAGE'],
-        imageConfig: { aspectRatio: '16:9' },
-        temperature: 1.15,
-        seed: art.seed % 2147483647,
-      },
-    }),
+  const json = await callGemini(apiKey, IMAGE_MODELS, {
+    contents: [{ role: 'user', parts: [{ text: `${prompt}\n\n${style}` }] }],
+    generationConfig: {
+      responseModalities: ['TEXT', 'IMAGE'],
+      imageConfig: { aspectRatio: '16:9' },
+      temperature: 1.15,
+      seed: art.seed % 2147483647,
+    },
   });
-  if (!res.ok) throw new Error(`Gemini image ${res.status}: ${await res.text()}`);
-  const json = await res.json();
   const parts = json?.candidates?.[0]?.content?.parts ?? [];
   const inline = parts.find((p: { inlineData?: { data?: string } }) => p?.inlineData?.data)?.inlineData;
   if (!inline?.data) throw new Error('Gemini returned no image data');
