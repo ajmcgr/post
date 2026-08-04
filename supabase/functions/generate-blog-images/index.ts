@@ -8,8 +8,23 @@ const corsHeaders = {
 };
 
 const GEMINI = 'https://generativelanguage.googleapis.com/v1beta/models';
-const TEXT_MODEL = 'gemini-2.5-flash';
-const IMAGE_MODEL = 'gemini-2.5-flash-image';
+const TEXT_MODELS = ['gemini-flash-latest', 'gemini-2.5-flash', 'gemini-2.0-flash'];
+const IMAGE_MODELS = ['gemini-2.5-flash-image', 'gemini-2.0-flash-preview-image-generation'];
+
+async function callGemini(apiKey: string, models: string[], body: unknown) {
+  let lastErr = '';
+  for (const model of models) {
+    const res = await fetch(`${GEMINI}/${model}:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (res.ok) return await res.json();
+    lastErr = `${model} -> ${res.status}: ${await res.text()}`;
+    if (res.status !== 404 && res.status !== 400) break;
+  }
+  throw new Error(`Gemini failed (${lastErr})`);
+}
 const BUCKET = 'blog-images';
 const BLOG_INDEX_URL = Deno.env.get('BLOG_INDEX_URL') ?? 'https://trypost.ai/blog-index.json';
 
@@ -151,16 +166,10 @@ Body: ${post.content.slice(0, 2500)}
 
 Return only the prompt.`;
 
-  const res = await fetch(`${GEMINI}/${TEXT_MODEL}:generateContent?key=${apiKey}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ role: 'user', parts: [{ text: instruction }] }],
-      generationConfig: { temperature: 1.2, topP: 0.95 },
-    }),
+  const json = await callGemini(apiKey, TEXT_MODELS, {
+    contents: [{ role: 'user', parts: [{ text: instruction }] }],
+    generationConfig: { temperature: 1.2, topP: 0.95 },
   });
-  if (!res.ok) throw new Error(`Gemini text ${res.status}: ${await res.text()}`);
-  const json = await res.json();
   const text = json?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text ?? '').join(' ').trim();
   if (!text) throw new Error('Gemini returned no prompt text');
   return text;
@@ -178,21 +187,15 @@ async function generateImage(apiKey: string, prompt: string, slug: string): Prom
     'This must not look like a generic blue gradient swoosh — commit to the composition and motif above.',
   ].join(' ');
 
-  const res = await fetch(`${GEMINI}/${IMAGE_MODEL}:generateContent?key=${apiKey}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ role: 'user', parts: [{ text: `${prompt}\n\n${style}` }] }],
-      generationConfig: {
-        responseModalities: ['TEXT', 'IMAGE'],
-        imageConfig: { aspectRatio: '16:9' },
-        temperature: 1.15,
-        seed: art.seed % 2147483647,
-      },
-    }),
+  const json = await callGemini(apiKey, IMAGE_MODELS, {
+    contents: [{ role: 'user', parts: [{ text: `${prompt}\n\n${style}` }] }],
+    generationConfig: {
+      responseModalities: ['TEXT', 'IMAGE'],
+      imageConfig: { aspectRatio: '16:9' },
+      temperature: 1.15,
+      seed: art.seed % 2147483647,
+    },
   });
-  if (!res.ok) throw new Error(`Gemini image ${res.status}: ${await res.text()}`);
-  const json = await res.json();
   const parts = json?.candidates?.[0]?.content?.parts ?? [];
   const inline = parts.find((p: { inlineData?: { data?: string } }) => p?.inlineData?.data)?.inlineData;
   if (!inline?.data) throw new Error('Gemini returned no image data');
