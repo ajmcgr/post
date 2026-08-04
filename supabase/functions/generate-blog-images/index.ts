@@ -13,15 +13,89 @@ const IMAGE_MODEL = 'gemini-2.5-flash-image';
 const BUCKET = 'blog-images';
 const BLOG_INDEX_URL = Deno.env.get('BLOG_INDEX_URL') ?? 'https://trypost.ai/blog-index.json';
 
-const STYLE = [
+/** Brand rules that must hold for every image (keeps the set on-brand). */
+const BRAND = [
   'Premium editorial artwork for a modern SaaS brand called Post.',
   'Abstract and conceptual rather than literal. No people, no robots, no brains, no clipart, no stock-photo look.',
-  'Minimal composition, generous negative space, soft gradients, high contrast, cinematic lighting.',
-  'Palette: deep near-black background (#0d0d0f) with electric blue (#136ed5) and cool light-blue accents, subtle grain.',
-  'Geometric shapes, layered translucent planes, precise grids and flowing gradient ribbons.',
+  'Palette: deep near-black background (#0d0d0f) with electric blue (#136ed5) plus one supporting accent, subtle film grain.',
+  'Generous negative space, high contrast, cinematic lighting, magazine cover quality.',
   'Absolutely no text, no words, no letters, no numbers, no logos, no watermarks, no UI screenshots.',
-  '16:9 wide banner, sharp, high fidelity, magazine cover quality.',
+  '16:9 wide banner, sharp, high fidelity.',
 ].join(' ');
+
+/** Variation axes — hashed per slug so every article gets a distinct look. */
+const COMPOSITIONS = [
+  'strong off-centre subject on the left third with deep empty space to the right',
+  'centred radial composition expanding from a single point of light',
+  'diagonal composition sweeping from bottom-left to top-right',
+  'layered horizontal bands stacked like strata across the frame',
+  'tight macro crop of a much larger structure, edges running out of frame',
+  'isometric floating arrangement viewed slightly from above',
+  'symmetrical mirrored composition split down the vertical centre',
+  'sparse grid of small elements with one dominant anomaly',
+];
+
+const MOTIFS = [
+  'flowing translucent gradient ribbons',
+  'precise wireframe grid meshes bending in 3D space',
+  'stacked frosted glass planes with refracted edges',
+  'liquid chrome forms with soft specular highlights',
+  'fine particle fields forming a soft volumetric cloud',
+  'concentric arcs and orbital rings',
+  'extruded geometric blocks casting long soft shadows',
+  'folded paper-like planes with crisp creases',
+  'topographic contour lines rippling outward',
+  'long-exposure light trails through darkness',
+];
+
+const ACCENTS = [
+  'cool cyan',
+  'soft violet',
+  'pale ice white',
+  'deep indigo',
+  'muted teal',
+  'warm amber used sparingly as a single highlight',
+];
+
+const LIGHTING = [
+  'single hard rim light from the top right',
+  'soft diffused studio glow',
+  'dramatic low-key lighting with deep shadow falloff',
+  'backlit silhouette with a bright halo',
+  'cool ambient bounce light with a faint lens bloom',
+];
+
+const TEXTURES = [
+  'matte surfaces with fine grain',
+  'glossy reflective surfaces',
+  'frosted translucent surfaces',
+  'soft velvety gradients with subtle noise',
+];
+
+const hash = (s: string) => {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i += 1) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return Math.abs(h);
+};
+
+const pick = <T,>(arr: T[], seed: number, salt: number) => arr[(seed + salt * 7919) % arr.length];
+
+const artDirection = (slug: string) => {
+  const seed = hash(slug);
+  return {
+    seed,
+    composition: pick(COMPOSITIONS, seed, 1),
+    motif: pick(MOTIFS, seed, 2),
+    secondMotif: pick(MOTIFS, seed, 5),
+    accent: pick(ACCENTS, seed, 3),
+    lighting: pick(LIGHTING, seed, 4),
+    texture: pick(TEXTURES, seed, 6),
+  };
+};
+
 
 type Post = {
   slug: string;
@@ -55,9 +129,19 @@ async function withRetry<T>(label: string, fn: () => Promise<T>, attempts = 3): 
 }
 
 async function buildPrompt(apiKey: string, post: Post): Promise<string> {
+  const art = artDirection(post.slug);
   const instruction = `You write art-direction prompts for an editorial tech publication.
-Read the article below and write ONE concise visual prompt (max 45 words) describing an abstract, conceptual image that captures the article's core idea.
+Read the article below and write ONE concise visual prompt (max 55 words) describing an abstract, conceptual image that captures this specific article's core idea.
+The image must be visually distinct from every other article in the series, so lean hard on the assigned art direction below and invent a metaphor unique to this article's subject.
 Describe shapes, motion, composition and metaphor only. Never mention text, words, logos, people, robots or brains.
+
+Assigned art direction (must be followed):
+- Composition: ${art.composition}
+- Primary motif: ${art.motif}
+- Secondary element: ${art.secondMotif}
+- Supporting accent colour alongside electric blue: ${art.accent}
+- Lighting: ${art.lighting}
+- Surface treatment: ${art.texture}
 
 Title: ${post.title}
 Category: ${post.category}
@@ -70,7 +154,10 @@ Return only the prompt.`;
   const res = await fetch(`${GEMINI}/${TEXT_MODEL}:generateContent?key=${apiKey}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: instruction }] }] }),
+    body: JSON.stringify({
+      contents: [{ role: 'user', parts: [{ text: instruction }] }],
+      generationConfig: { temperature: 1.2, topP: 0.95 },
+    }),
   });
   if (!res.ok) throw new Error(`Gemini text ${res.status}: ${await res.text()}`);
   const json = await res.json();
@@ -79,15 +166,28 @@ Return only the prompt.`;
   return text;
 }
 
-async function generateImage(apiKey: string, prompt: string): Promise<Uint8Array> {
+async function generateImage(apiKey: string, prompt: string, slug: string): Promise<Uint8Array> {
+  const art = artDirection(slug);
+  const style = [
+    BRAND,
+    `Composition: ${art.composition}.`,
+    `Primary motif: ${art.motif}, with ${art.secondMotif} as a secondary element.`,
+    `Supporting accent colour: ${art.accent}.`,
+    `Lighting: ${art.lighting}.`,
+    `Surfaces: ${art.texture}.`,
+    'This must not look like a generic blue gradient swoosh — commit to the composition and motif above.',
+  ].join(' ');
+
   const res = await fetch(`${GEMINI}/${IMAGE_MODEL}:generateContent?key=${apiKey}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      contents: [{ role: 'user', parts: [{ text: `${prompt}\n\n${STYLE}` }] }],
+      contents: [{ role: 'user', parts: [{ text: `${prompt}\n\n${style}` }] }],
       generationConfig: {
         responseModalities: ['TEXT', 'IMAGE'],
         imageConfig: { aspectRatio: '16:9' },
+        temperature: 1.15,
+        seed: art.seed % 2147483647,
       },
     }),
   });
@@ -98,6 +198,7 @@ async function generateImage(apiKey: string, prompt: string): Promise<Uint8Array
   if (!inline?.data) throw new Error('Gemini returned no image data');
   return Uint8Array.from(atob(inline.data), (c) => c.charCodeAt(0));
 }
+
 
 const VARIANTS: Array<{ name: 'hero' | 'card' | 'og'; width: number; height: number; quality: number }> = [
   { name: 'hero', width: 1600, height: 900, quality: 82 },
@@ -166,7 +267,7 @@ Deno.serve(async (req) => {
 
       try {
         const prompt = await withRetry(`prompt:${post.slug}`, () => buildPrompt(apiKey, post));
-        const raw = await withRetry(`image:${post.slug}`, () => generateImage(apiKey, prompt));
+        const raw = await withRetry(`image:${post.slug}`, () => generateImage(apiKey, prompt, post.slug));
         const variants = await renderVariants(raw);
 
         for (const variant of variants) {
