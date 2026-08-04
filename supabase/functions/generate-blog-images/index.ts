@@ -129,9 +129,19 @@ async function withRetry<T>(label: string, fn: () => Promise<T>, attempts = 3): 
 }
 
 async function buildPrompt(apiKey: string, post: Post): Promise<string> {
+  const art = artDirection(post.slug);
   const instruction = `You write art-direction prompts for an editorial tech publication.
-Read the article below and write ONE concise visual prompt (max 45 words) describing an abstract, conceptual image that captures the article's core idea.
+Read the article below and write ONE concise visual prompt (max 55 words) describing an abstract, conceptual image that captures this specific article's core idea.
+The image must be visually distinct from every other article in the series, so lean hard on the assigned art direction below and invent a metaphor unique to this article's subject.
 Describe shapes, motion, composition and metaphor only. Never mention text, words, logos, people, robots or brains.
+
+Assigned art direction (must be followed):
+- Composition: ${art.composition}
+- Primary motif: ${art.motif}
+- Secondary element: ${art.secondMotif}
+- Supporting accent colour alongside electric blue: ${art.accent}
+- Lighting: ${art.lighting}
+- Surface treatment: ${art.texture}
 
 Title: ${post.title}
 Category: ${post.category}
@@ -144,7 +154,10 @@ Return only the prompt.`;
   const res = await fetch(`${GEMINI}/${TEXT_MODEL}:generateContent?key=${apiKey}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: instruction }] }] }),
+    body: JSON.stringify({
+      contents: [{ role: 'user', parts: [{ text: instruction }] }],
+      generationConfig: { temperature: 1.2, topP: 0.95 },
+    }),
   });
   if (!res.ok) throw new Error(`Gemini text ${res.status}: ${await res.text()}`);
   const json = await res.json();
@@ -153,15 +166,28 @@ Return only the prompt.`;
   return text;
 }
 
-async function generateImage(apiKey: string, prompt: string): Promise<Uint8Array> {
+async function generateImage(apiKey: string, prompt: string, slug: string): Promise<Uint8Array> {
+  const art = artDirection(slug);
+  const style = [
+    BRAND,
+    `Composition: ${art.composition}.`,
+    `Primary motif: ${art.motif}, with ${art.secondMotif} as a secondary element.`,
+    `Supporting accent colour: ${art.accent}.`,
+    `Lighting: ${art.lighting}.`,
+    `Surfaces: ${art.texture}.`,
+    'This must not look like a generic blue gradient swoosh — commit to the composition and motif above.',
+  ].join(' ');
+
   const res = await fetch(`${GEMINI}/${IMAGE_MODEL}:generateContent?key=${apiKey}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      contents: [{ role: 'user', parts: [{ text: `${prompt}\n\n${STYLE}` }] }],
+      contents: [{ role: 'user', parts: [{ text: `${prompt}\n\n${style}` }] }],
       generationConfig: {
         responseModalities: ['TEXT', 'IMAGE'],
         imageConfig: { aspectRatio: '16:9' },
+        temperature: 1.15,
+        seed: art.seed % 2147483647,
       },
     }),
   });
@@ -172,6 +198,7 @@ async function generateImage(apiKey: string, prompt: string): Promise<Uint8Array
   if (!inline?.data) throw new Error('Gemini returned no image data');
   return Uint8Array.from(atob(inline.data), (c) => c.charCodeAt(0));
 }
+
 
 const VARIANTS: Array<{ name: 'hero' | 'card' | 'og'; width: number; height: number; quality: number }> = [
   { name: 'hero', width: 1600, height: 900, quality: 82 },
