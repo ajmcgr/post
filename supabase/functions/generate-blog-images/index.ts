@@ -30,61 +30,57 @@ const BLOG_INDEX_URL = Deno.env.get('BLOG_INDEX_URL') ?? 'https://trypost.ai/blo
 
 /** Brand rules that must hold for every image (keeps the set on-brand). */
 const BRAND = [
-  'Premium editorial artwork for a modern SaaS brand called Post.',
-  'Abstract and conceptual rather than literal. No people, no robots, no brains, no clipart, no stock-photo look.',
-  'Palette: deep near-black background (#0d0d0f) with electric blue (#136ed5) plus one supporting accent, subtle film grain.',
-  'Generous negative space, high contrast, cinematic lighting, magazine cover quality.',
+  'Minimal black-and-white pictogram artwork for a modern SaaS brand called Post.',
+  'Style: flat vector silhouette, solid pure black shapes on a pure white background, exactly like a simple app icon or pictogram.',
+  'Strictly two tones: #000000 and #ffffff. No grey, no gradients, no colour, no shading, no shadows, no glow, no texture, no 3D, no photorealism.',
+  'Bold geometric forms with clean edges, thick even strokes, generous negative space, perfectly balanced and centred like a logo mark.',
+  'Abstract and conceptual, iconographic. No people, no robots, no brains, no clipart, no stock-photo look.',
   'Absolutely no text, no words, no letters, no numbers, no logos, no watermarks, no UI screenshots.',
-  '16:9 wide banner, sharp, high fidelity.',
+  '16:9 wide banner with the mark sitting in clean white space, sharp, high fidelity.',
 ].join(' ');
 
 /** Variation axes — hashed per slug so every article gets a distinct look. */
 const COMPOSITIONS = [
-  'strong off-centre subject on the left third with deep empty space to the right',
-  'centred radial composition expanding from a single point of light',
-  'diagonal composition sweeping from bottom-left to top-right',
-  'layered horizontal bands stacked like strata across the frame',
-  'tight macro crop of a much larger structure, edges running out of frame',
-  'isometric floating arrangement viewed slightly from above',
-  'symmetrical mirrored composition split down the vertical centre',
-  'sparse grid of small elements with one dominant anomaly',
+  'single bold mark centred in wide empty white space',
+  'off-centre mark on the left third with clean white space to the right',
+  'symmetrical mirrored arrangement split down the vertical centre',
+  'horizontal row of repeating marks with one differing element',
+  'sparse grid of small marks with one dominant anomaly',
+  'diagonal arrangement running from bottom-left to top-right',
+  'concentric arrangement radiating from a single central form',
+  'stacked horizontal bands of simple shapes across the frame',
 ];
 
 const MOTIFS = [
-  'flowing translucent gradient ribbons',
-  'precise wireframe grid meshes bending in 3D space',
-  'stacked frosted glass planes with refracted edges',
-  'liquid chrome forms with soft specular highlights',
-  'fine particle fields forming a soft volumetric cloud',
-  'concentric arcs and orbital rings',
-  'extruded geometric blocks casting long soft shadows',
-  'folded paper-like planes with crisp creases',
-  'topographic contour lines rippling outward',
-  'long-exposure light trails through darkness',
+  'a solid black circle with a simple cut-out shape removed from it',
+  'thick rounded bars of varying length',
+  'a bold clock-like circular form with two straight hands',
+  'simple arrows and directional chevrons',
+  'stacked rounded rectangles resembling cards',
+  'a calendar-like grid of solid squares',
+  'overlapping circles forming a venn-style mark',
+  'a bold spiral or looping continuous line of even thickness',
+  'triangular play-button and paper-plane forms',
+  'a dotted timeline of solid circles connected by a straight line',
 ];
 
 const ACCENTS = [
-  'cool cyan',
-  'soft violet',
-  'pale ice white',
-  'deep indigo',
-  'muted teal',
-  'warm amber used sparingly as a single highlight',
+  'pure white negative space used as the only counter-tone',
+  'white cut-outs carved inside the black shapes',
+  'thin white separation gaps between touching black forms',
+  'inverted section where a black block holds white shapes',
 ];
 
 const LIGHTING = [
-  'single hard rim light from the top right',
-  'soft diffused studio glow',
-  'dramatic low-key lighting with deep shadow falloff',
-  'backlit silhouette with a bright halo',
-  'cool ambient bounce light with a faint lens bloom',
+  'flat lighting, no shading whatsoever',
+  'completely even flat fill, pure silhouette',
+  'no lighting, pure two-tone vector flatness',
 ];
 
 const TEXTURES = [
-  'matte surfaces with fine grain',
-  'glossy reflective surfaces',
-  'frosted translucent surfaces',
-  'soft velvety gradients with subtle noise',
+  'perfectly flat solid fills with crisp vector edges',
+  'flat fills with rounded terminals and even stroke weight',
+  'flat fills with sharp geometric corners',
 ];
 
 const hash = (s: string) => {
@@ -146,16 +142,16 @@ async function withRetry<T>(label: string, fn: () => Promise<T>, attempts = 3): 
 async function buildPrompt(apiKey: string, post: Post): Promise<string> {
   const art = artDirection(post.slug);
   const instruction = `You write art-direction prompts for an editorial tech publication.
-Read the article below and write ONE concise visual prompt (max 55 words) describing an abstract, conceptual image that captures this specific article's core idea.
+Read the article below and write ONE concise visual prompt (max 45 words) describing a minimal, flat, black-and-white vector pictogram (solid black silhouette shapes on a pure white background) that captures this specific article's core idea.
 The image must be visually distinct from every other article in the series, so lean hard on the assigned art direction below and invent a metaphor unique to this article's subject.
-Describe shapes, motion, composition and metaphor only. Never mention text, words, logos, people, robots or brains.
+Describe simple geometric shapes and composition only. Never mention colour, gradients, shading, lighting, 3D, realism, text, words, logos, people, robots or brains.
 
 Assigned art direction (must be followed):
 - Composition: ${art.composition}
 - Primary motif: ${art.motif}
 - Secondary element: ${art.secondMotif}
-- Supporting accent colour alongside electric blue: ${art.accent}
-- Lighting: ${art.lighting}
+- Use of white negative space: ${art.accent}
+- Flatness: ${art.lighting}
 - Surface treatment: ${art.texture}
 
 Title: ${post.title}
@@ -181,10 +177,10 @@ async function generateImage(apiKey: string, prompt: string, slug: string): Prom
     BRAND,
     `Composition: ${art.composition}.`,
     `Primary motif: ${art.motif}, with ${art.secondMotif} as a secondary element.`,
-    `Supporting accent colour: ${art.accent}.`,
-    `Lighting: ${art.lighting}.`,
+    `Negative space: ${art.accent}.`,
+    `Flatness: ${art.lighting}.`,
     `Surfaces: ${art.texture}.`,
-    'This must not look like a generic blue gradient swoosh — commit to the composition and motif above.',
+    'Two colours only: solid black on pure white. It must read as a clean minimal icon, not an illustration or render.',
   ].join(' ');
 
   const json = await callGemini(apiKey, IMAGE_MODELS, {
