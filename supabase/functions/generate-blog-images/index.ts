@@ -267,7 +267,7 @@ Deno.serve(async (req) => {
 
       try {
         const prompt = await withRetry(`prompt:${post.slug}`, () => buildPrompt(apiKey, post));
-        const raw = await withRetry(`image:${post.slug}`, () => generateImage(apiKey, prompt));
+        const raw = await withRetry(`image:${post.slug}`, () => generateImage(apiKey, prompt, post.slug));
         const variants = await renderVariants(raw);
 
         for (const variant of variants) {
