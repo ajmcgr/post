@@ -166,16 +166,10 @@ Body: ${post.content.slice(0, 2500)}
 
 Return only the prompt.`;
 
-  const res = await fetch(`${GEMINI}/${TEXT_MODEL}:generateContent?key=${apiKey}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ role: 'user', parts: [{ text: instruction }] }],
-      generationConfig: { temperature: 1.2, topP: 0.95 },
-    }),
+  const json = await callGemini(apiKey, TEXT_MODELS, {
+    contents: [{ role: 'user', parts: [{ text: instruction }] }],
+    generationConfig: { temperature: 1.2, topP: 0.95 },
   });
-  if (!res.ok) throw new Error(`Gemini text ${res.status}: ${await res.text()}`);
-  const json = await res.json();
   const text = json?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text ?? '').join(' ').trim();
   if (!text) throw new Error('Gemini returned no prompt text');
   return text;
