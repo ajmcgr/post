@@ -8,8 +8,23 @@ const corsHeaders = {
 };
 
 const GEMINI = 'https://generativelanguage.googleapis.com/v1beta/models';
-const TEXT_MODEL = 'gemini-2.5-flash';
-const IMAGE_MODEL = 'gemini-2.5-flash-image';
+const TEXT_MODELS = ['gemini-flash-latest', 'gemini-2.5-flash', 'gemini-2.0-flash'];
+const IMAGE_MODELS = ['gemini-2.5-flash-image', 'gemini-2.0-flash-preview-image-generation'];
+
+async function callGemini(apiKey: string, models: string[], body: unknown) {
+  let lastErr = '';
+  for (const model of models) {
+    const res = await fetch(`${GEMINI}/${model}:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (res.ok) return await res.json();
+    lastErr = `${model} -> ${res.status}: ${await res.text()}`;
+    if (res.status !== 404 && res.status !== 400) break;
+  }
+  throw new Error(`Gemini failed (${lastErr})`);
+}
 const BUCKET = 'blog-images';
 const BLOG_INDEX_URL = Deno.env.get('BLOG_INDEX_URL') ?? 'https://trypost.ai/blog-index.json';
 
