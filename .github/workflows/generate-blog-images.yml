@@ -10,9 +10,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Generate missing blog artwork
+        env:
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
           curl --fail --show-error --silent \
             --request POST \
             --header "Content-Type: application/json" \
+            --header "apikey: $SUPABASE_ANON_KEY" \
+            --header "Authorization: Bearer $SUPABASE_ANON_KEY" \
             --data '{"limit":10}' \
             "https://qfqowhetrxritoyjzzcz.supabase.co/functions/v1/generate-blog-images"
