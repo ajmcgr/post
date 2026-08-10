@@ -50,6 +50,7 @@ const PLATFORM_LIMITS: Record<Platform, number> = {
   youtube: 5000,
 };
 const MAX_EDGE_BYTE_UPLOAD = 20 * 1024 * 1024; // Edge functions should not proxy large videos
+const PUBLISH_MEDIA_SIGNED_URL_TTL = 60 * 60 * 24; // 24h
 
 function createAdminClient() {
   return createClient(
@@ -167,8 +168,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    const image = media.find((m) => m.kind === 'image');
-    const video = media.find((m) => m.kind === 'video');
+    const mediaForPublish = await Promise.all(media.map((item) => refreshMediaUrl(admin, item)));
+    const image = mediaForPublish.find((m) => m.kind === 'image');
+    const video = mediaForPublish.find((m) => m.kind === 'video');
 
     const tasks = platforms.map(async (platform): Promise<PublishResult> => {
       try {
@@ -259,6 +261,20 @@ Deno.serve(async (req) => {
 // ---------- shared helpers ----------
 
 const formatMB = (bytes: number) => `${Math.ceil(bytes / 1024 / 1024)}MB`;
+
+async function refreshMediaUrl(admin: SupabaseClient, media: MediaRef): Promise<MediaRef> {
+  if (!media.path) return media;
+
+  const { data, error } = await admin.storage
+    .from('post-media')
+    .createSignedUrl(media.path, PUBLISH_MEDIA_SIGNED_URL_TTL);
+
+  if (error || !data?.signedUrl) {
+    throw new Error(`Failed to sign media URL: ${error?.message ?? 'No signed URL returned'}`);
+  }
+
+  return { ...media, url: data.signedUrl };
+}
 
 async function fetchBytes(media: MediaRef, platform: Platform): Promise<Uint8Array> {
   if (media.kind === 'video' && media.size && media.size > MAX_EDGE_BYTE_UPLOAD) {
