@@ -68,6 +68,7 @@ import BulkImageUpload from "./pages/dashboard/BulkImageUpload";
 import BulkVideoUpload from "./pages/dashboard/BulkVideoUpload";
 import NotFound from "./pages/NotFound";
 import Reserve from "./pages/Reserve";
+import AIInfo from "./pages/AIInfo";
 
 const App = () => (
   <TooltipProvider>
@@ -86,6 +87,7 @@ const App = () => (
       <Route path="/faq" element={<FAQ />} />
       <Route path="/oauth/:platform/callback" element={<OAuthCallback />} />
       <Route path="/reserve" element={<Reserve />} />
+      <Route path="/ai-info" element={<AIInfo />} />
       
       {/* Dashboard Routes with Sidebar */}
       <Route path="/dashboard" element={<DashboardLayout />}>
