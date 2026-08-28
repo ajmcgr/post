@@ -29,10 +29,7 @@ const Footer = () => {
               <li><Link to="/platforms/tiktok" className="text-muted-foreground hover:text-foreground">TikTok</Link></li>
               <li><Link to="/platforms/twitter" className="text-muted-foreground hover:text-foreground">X (Twitter)</Link></li>
               <li><Link to="/platforms/facebook" className="text-muted-foreground hover:text-foreground">Facebook</Link></li>
-              <li><Link to="/platforms/whatsapp" className="text-muted-foreground hover:text-foreground">WhatsApp</Link></li>
-              <li><Link to="/platforms/telegram" className="text-muted-foreground hover:text-foreground">Telegram</Link></li>
               <li><Link to="/platforms/threads" className="text-muted-foreground hover:text-foreground">Threads</Link></li>
-              <li><Link to="/platforms/snapchat" className="text-muted-foreground hover:text-foreground">Snapchat</Link></li>
             </ul>
           </div>
           <div>
@@ -71,7 +68,7 @@ const Footer = () => {
           </div>
         </div>
         <div className="mt-8 pt-8 text-center text-sm text-muted-foreground">
-          Copyright © 2026 Works App, Inc. Built with 🫶🏻 by <a href="https://works.xyz" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">Works</a>.
+          Copyright © 2026 Works App, Inc. Built with 🫶🏻 by <a href="http://x.com/alexmacgregor__/" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">Alex</a>.
         </div>
       </div>
     </footer>

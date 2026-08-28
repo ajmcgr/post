@@ -5,6 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
+import { useSubscription } from '@/hooks/useSubscription';
+import { getPlan } from '@/data/plans';
+import { trackEvent } from '@/lib/analytics';
 import facebookLogo from "@/assets/facebook.svg";
 import xLogo from "@/assets/x.svg";
 import linkedinLogo from "@/assets/linkedin.svg";
@@ -32,6 +37,8 @@ const platforms = [
 
 const Connections = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const { plan } = useSubscription();
   const [connections, setConnections] = useState<OAuthConnection[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -54,8 +61,18 @@ const Connections = () => {
   };
 
   const handleConnect = async (platform: string) => {
+    const limit = getPlan(plan).socialAccountLimit;
+    const connectedCount = connections.filter((connection) => connection.is_connected).length;
+    if (limit !== null && connectedCount >= limit) {
+      trackEvent('upgrade_prompt_viewed', { source: 'connection_limit', plan });
+      toast.error(`Your ${getPlan(plan).name} plan supports ${limit} connected account${limit === 1 ? '' : 's'}.`);
+      navigate('/dashboard/account/plans');
+      return;
+    }
+
     try {
       setLoading(true);
+      trackEvent('oauth_connection_started', { platform });
       
       console.log(`Connecting to ${platform}...`);
       

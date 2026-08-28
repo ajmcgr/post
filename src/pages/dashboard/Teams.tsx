@@ -24,21 +24,22 @@ import {
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { useSubscription } from "@/hooks/useSubscription";
+import { trackEvent } from "@/lib/analytics";
 
 const Teams = () => {
   const { currentWorkspace, members, invitations, userRole, canManageWorkspace, refreshWorkspace } = useWorkspace();
   const navigate = useNavigate();
+  const { plan } = useSubscription();
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<"member" | "admin">("member");
   const [loading, setLoading] = useState(false);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
 
-  // Mock plan - replace with actual user plan
-  const currentPlan = "Creator"; // or "Pro" or "Business"
-
   const handleInvite = async () => {
-    if (currentPlan === "Creator" || currentPlan === "Pro") {
+    if (plan !== "business") {
+      trackEvent("upgrade_prompt_viewed", { source: "team_invite", plan });
       setShowUpgradeDialog(true);
       return;
     }

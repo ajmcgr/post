@@ -21,6 +21,9 @@ import facebookIcon from '@/assets/facebook.svg';
 import youtubeIcon from '@/assets/youtube.svg';
 import threadsIcon from '@/assets/threads.svg';
 import tiktokIcon from '@/assets/tiktok.svg';
+import { trackEvent } from '@/lib/analytics';
+import { useSubscription } from '@/hooks/useSubscription';
+import { canSchedulePost } from '@/lib/entitlements';
 
 const platformIcons: Record<string, string> = {
   twitter: twitterIcon,
@@ -63,6 +66,7 @@ type Slot = { time: string; days: boolean[] };
 
 const Composer = () => {
   const { user, loading: authLoading } = useAuth();
+  const { plan } = useSubscription();
   const navigate = useNavigate();
   const location = useLocation();
   const [content, setContent] = useState(location.state?.content || '');
@@ -176,6 +180,13 @@ const Composer = () => {
     setPublishing(true);
     try {
       if (schedulePost) {
+        if (!(await canSchedulePost(user!.id, plan))) {
+          trackEvent('upgrade_prompt_viewed', { source: 'schedule_limit', plan });
+          toast.error('You have reached the Free plan limit of 10 scheduled posts this month.');
+          setPublishing(false);
+          navigate('/dashboard/account/plans?plan=pro');
+          return;
+        }
         let scheduledAt: Date | null = null;
         if (scheduleMode === 'pick') {
           if (!scheduleDate) {
@@ -201,6 +212,7 @@ const Composer = () => {
           media: media.map(({ media_id, path, url, mime, kind, width, height }) => ({ media_id, path, url, mime, kind, width, height })),
         });
         if (error) throw error;
+        trackEvent('post_scheduled', { composer: 'text', platform_count: selectedPlatforms.length, queue: scheduleMode === 'queue' });
         toast.success(`Scheduled for ${scheduledAt.toLocaleString()}`);
         navigate('/dashboard/scheduled');
         return;
@@ -218,17 +230,21 @@ const Composer = () => {
       const successful = results.filter((r: any) => r.success).length;
       const failed = results.filter((r: any) => !r.success).length;
       if (failed === 0) {
+        trackEvent('post_published', { composer: 'text', platform_count: successful });
         navigate('/dashboard/publishing', {
           state: { postData: { content, platforms: selectedPlatforms }, successful, total: results.length },
         });
       } else if (successful > 0) {
+        trackEvent('post_partially_published', { composer: 'text', successful, failed });
         toast.warning(`Published to ${successful}, ${failed} failed.`);
         setTimeout(() => navigate('/dashboard/posts'), 2000);
       } else {
+        trackEvent('post_publish_failed', { composer: 'text', platform_count: selectedPlatforms.length });
         toast.error('Failed to publish to any platform.');
         setPublishing(false);
       }
     } catch (error: any) {
+      trackEvent('post_submit_error', { composer: 'text' });
       console.error('Publishing error:', error);
       toast.error(error.message || 'Failed to publish.');
       setPublishing(false);
@@ -247,6 +263,7 @@ const Composer = () => {
     });
     if (error) toast.error(error.message);
     else {
+      trackEvent('draft_saved', { composer: 'text', platform_count: selectedPlatforms.length });
       toast.success('Saved to drafts');
       navigate('/dashboard/drafts');
     }

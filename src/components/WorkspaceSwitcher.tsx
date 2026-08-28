@@ -13,21 +13,24 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "./ui/alert-dialog";
-import { toast } from "sonner";
+import { useWorkspace } from "@/hooks/useWorkspace";
+import { useSubscription } from "@/hooks/useSubscription";
+import { trackEvent } from "@/lib/analytics";
 
 export function WorkspaceSwitcher() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
-  const currentPlan: "Creator" | "Pro" | "Business" = "Creator";
-  const currentWorkspace = "main";
+  const { plan } = useSubscription();
+  const { currentWorkspace, workspaces, switchWorkspace } = useWorkspace();
 
   const handleNew = () => {
-    if (currentPlan === "Creator" || currentPlan === "Pro") {
+    if (plan !== "business") {
+      trackEvent("upgrade_prompt_viewed", { source: "new_workspace", plan });
       setShowUpgrade(true);
       setOpen(false);
     } else {
-      toast.success("Creating new workspace...");
+      navigate("/dashboard/workspaces?new=1");
       setOpen(false);
     }
   };
@@ -43,16 +46,26 @@ export function WorkspaceSwitcher() {
         <PopoverTrigger asChild>
           <Button variant="ghost" size="sm" className="gap-2 hover:bg-muted/50">
             <Home className="h-4 w-4" />
-            <span>{currentWorkspace}</span>
+            <span>{currentWorkspace?.name ?? "main"}</span>
             <ChevronDown className="h-4 w-4 opacity-60" />
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-64 p-2" align="end">
           <div className="space-y-1">
-            <Button variant="secondary" className="w-full justify-start">
-              <Home className="mr-2 h-4 w-4" />
-              {currentWorkspace}
-            </Button>
+            {workspaces.map((workspace) => (
+              <Button
+                key={workspace.id}
+                variant={workspace.id === currentWorkspace?.id ? "secondary" : "ghost"}
+                className="w-full justify-start"
+                onClick={() => {
+                  switchWorkspace(workspace.id);
+                  setOpen(false);
+                }}
+              >
+                <Home className="mr-2 h-4 w-4" />
+                {workspace.name}
+              </Button>
+            ))}
             <Button variant="ghost" className="w-full justify-start" onClick={handleManage}>
               <Settings className="mr-2 h-4 w-4" />
               Manage Workspaces

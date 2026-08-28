@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Loader2 } from 'lucide-react';
 import { getOAuthCallbackUrl } from '@/lib/appUrl';
+import { trackEvent } from '@/lib/analytics';
 
 async function getSessionAccessToken(retries = 10, delayMs = 250): Promise<string | null> {
   for (let attempt = 0; attempt < retries; attempt += 1) {
@@ -74,6 +75,7 @@ const OAuthCallback = () => {
         }
 
         if (data?.success) {
+          trackEvent('oauth_connection_completed', { platform });
           // Fire-and-forget confirmation email
           supabase.functions.invoke('send-notification-email', {
             headers: { Authorization: `Bearer ${accessToken}` },

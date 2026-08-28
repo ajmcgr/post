@@ -5,71 +5,11 @@ import { Check } from "lucide-react";
 import { Link } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-
-type Billing = "monthly" | "yearly";
+import { productPlans, type BillingInterval } from "@/data/plans";
+import { trackEvent } from "@/lib/analytics";
 
 const Pricing = () => {
-  const [billing, setBilling] = useState<Billing>("monthly");
-
-  const plans = [
-    {
-      name: "Free",
-      monthly: 0,
-      yearly: 0,
-      description: "Everything you need to try Post and schedule your first campaigns.",
-      features: [
-        "Connect up to 2 social platforms",
-        "10 scheduled posts per month",
-        "Single post composer",
-        "Calendar view",
-        "Drafts library",
-        "1 user",
-      ],
-      cta: "Get Started",
-      highlighted: false,
-    },
-    {
-      name: "Pro",
-      monthly: 19,
-      yearly: 190,
-      description: "For serious creators publishing consistently across every platform.",
-      features: [
-        "Connect all 7 platforms (X, LinkedIn, Instagram, Facebook, YouTube, Threads, TikTok)",
-        "Unlimited scheduled posts",
-        "Single & bulk post composer (image + video)",
-        "Calendar, queue & posting time slots",
-        "All posts, Scheduled, Posted & Drafts views",
-        "Auto-retry on failed posts",
-        "Media library & uploads up to 1GB",
-        "Post performance analytics",
-        "Email notifications for publishes & failures",
-        "Priority support",
-      ],
-      cta: "Start Free Trial",
-      highlighted: true,
-    },
-    {
-      name: "Business",
-      monthly: 49,
-      yearly: 490,
-      description: "For teams and agencies managing multiple brands at scale.",
-      features: [
-        "Everything in Pro",
-        "Unlimited connected social accounts",
-        "Team workspaces with role-based access",
-        "Invite unlimited team members",
-        "Multi-brand workspace switching",
-        "Advanced analytics & reporting",
-        "Approval workflows for drafts",
-        "Bulk CSV import & scheduling",
-        "10GB media storage",
-        "API access & webhooks",
-        "Dedicated onboarding & support",
-      ],
-      cta: "Start Free Trial",
-      highlighted: false,
-    },
-  ];
+  const [billing, setBilling] = useState<BillingInterval>("monthly");
 
   return (
     <div className="min-h-screen bg-background">
@@ -107,7 +47,7 @@ const Pricing = () => {
 
         {/* Pricing Cards */}
         <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {plans.map((plan) => {
+          {productPlans.map((plan) => {
             const isFree = plan.monthly === 0;
             const amount = billing === "monthly" ? plan.monthly : plan.yearly;
             return (
@@ -149,7 +89,10 @@ const Pricing = () => {
                   ))}
                 </ul>
 
-                <Link to="/signup">
+                <Link
+                  to={plan.id === "free" ? "/signup" : `/signup?plan=${plan.id}&billing=${billing}`}
+                  onClick={() => trackEvent("pricing_cta_clicked", { plan: plan.id, billing, location: "pricing_page" })}
+                >
                   <Button
                     className="w-full"
                     variant={plan.highlighted ? "default" : "outline"}

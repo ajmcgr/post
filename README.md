@@ -92,6 +92,33 @@ select cron.schedule(
 );
 ```
 
+## Billing setup
+
+Apply the database migrations and deploy the billing functions before enabling paid upgrades:
+
+```sh
+supabase link --project-ref qfqowhetrxritoyjzzcz
+supabase db push
+supabase functions deploy create-checkout-session --project-ref qfqowhetrxritoyjzzcz
+supabase functions deploy customer-portal --project-ref qfqowhetrxritoyjzzcz
+supabase functions deploy stripe-webhook --project-ref qfqowhetrxritoyjzzcz
+```
+
+Create monthly and yearly Stripe prices for the Pro and Business products, then configure these Supabase secrets:
+
+```sh
+supabase secrets set \
+  STRIPE_SECRET_KEY=<stripe-secret-key> \
+  STRIPE_WEBHOOK_SECRET=<stripe-webhook-signing-secret> \
+  STRIPE_PRO_MONTHLY_PRICE_ID=<price-id> \
+  STRIPE_PRO_YEARLY_PRICE_ID=<price-id> \
+  STRIPE_BUSINESS_MONTHLY_PRICE_ID=<price-id> \
+  STRIPE_BUSINESS_YEARLY_PRICE_ID=<price-id> \
+  --project-ref qfqowhetrxritoyjzzcz
+```
+
+Point the Stripe webhook at `https://qfqowhetrxritoyjzzcz.supabase.co/functions/v1/stripe-webhook` and subscribe it to `customer.subscription.created`, `customer.subscription.updated`, and `customer.subscription.deleted`.
+
 ## Can I connect a custom domain to my Lovable project?
 
 Yes, you can!

@@ -23,15 +23,15 @@ const FAQ = () => {
           />
           <FAQItem
             question="Which platforms are supported?"
-            answer="Post supports all major social platforms including Twitter/X, LinkedIn, Instagram, Facebook, YouTube, TikTok, Threads, WhatsApp, Telegram, and Snapchat."
+            answer="Post supports Twitter/X, LinkedIn, Instagram, Facebook, YouTube, TikTok, and Threads."
           />
           <FAQItem
             question="Can I schedule the same post to multiple platforms?"
-            answer="Yes! Create your content once and schedule it across all your connected platforms with a single click. Post will optimize the format for each platform."
+            answer="Yes. Create the post once, customize the copy or media for each platform where needed, then schedule it across your selected accounts."
           />
           <FAQItem
             question="Is there a free plan?"
-            answer="Yes, we offer a free plan that includes 1 social account and 10 scheduled posts per month. Perfect for getting started. Upgrade anytime for unlimited posts and more accounts."
+            answer="Yes, the free plan includes 2 connected social platforms and 10 scheduled posts per month. Upgrade anytime for more accounts and unlimited scheduling."
           />
           <FAQItem
             question="How far in advance can I schedule posts?"

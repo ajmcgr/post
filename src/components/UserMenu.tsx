@@ -1,6 +1,5 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { useWorkspace } from "@/hooks/useWorkspace";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +13,6 @@ import { toast } from "sonner";
 
 export function UserMenu() {
   const { user, signOut } = useAuth();
-  const { canAccessBilling } = useWorkspace();
   const navigate = useNavigate();
 
   const email = user?.email ?? "";
@@ -50,11 +48,7 @@ export function UserMenu() {
         <DropdownMenuItem onClick={() => navigate("/dashboard/account/settings")}>
           Settings
         </DropdownMenuItem>
-        {canAccessBilling && (
-          <DropdownMenuItem onClick={() => window.open('/pricing', '_blank')}>
-            Plans
-          </DropdownMenuItem>
-        )}
+        <DropdownMenuItem onClick={() => navigate("/dashboard/account/plans")}>Plans</DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600">
           Sign out

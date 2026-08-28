@@ -17,6 +17,8 @@ import instagramLogo from "@/assets/instagram.svg";
 import youtubeLogo from "@/assets/youtube.svg";
 import threadsLogo from "@/assets/threads.svg";
 import tiktokLogo from "@/assets/tiktok.svg";
+import { productPlans, type BillingInterval } from "@/data/plans";
+import { trackEvent } from "@/lib/analytics";
 
 function GracefulImage({
   src,
@@ -43,73 +45,11 @@ function GracefulImage({
 }
 
 
-type Billing = "monthly" | "yearly";
-
-const plans = [
-  {
-    name: "Free",
-    monthly: 0,
-    yearly: 0,
-    description: "Everything you need to try Post and schedule your first campaigns.",
-    features: [
-      "Connect up to 2 social platforms",
-      "10 scheduled posts per month",
-      "Single post composer",
-      "Calendar view",
-      "Drafts library",
-      "1 user",
-    ],
-    cta: "Get Started",
-    highlighted: false,
-  },
-  {
-    name: "Pro",
-    monthly: 19,
-    yearly: 190,
-    description: "For serious creators publishing consistently across every platform.",
-    features: [
-      "Connect all 7 platforms (X, LinkedIn, Instagram, Facebook, YouTube, Threads, TikTok)",
-      "Unlimited scheduled posts",
-      "Single & bulk post composer (image + video)",
-      "Calendar, queue & posting time slots",
-      "All posts, Scheduled, Posted & Drafts views",
-      "Auto-retry on failed posts",
-      "Media library & uploads up to 1GB",
-      "Post performance analytics",
-      "Email notifications for publishes & failures",
-      "Priority support",
-    ],
-    cta: "Start Free Trial",
-    highlighted: true,
-  },
-  {
-    name: "Business",
-    monthly: 49,
-    yearly: 490,
-    description: "For teams and agencies managing multiple brands at scale.",
-    features: [
-      "Everything in Pro",
-      "Unlimited connected social accounts",
-      "Team workspaces with role-based access",
-      "Invite unlimited team members",
-      "Multi-brand workspace switching",
-      "Advanced analytics & reporting",
-      "Approval workflows for drafts",
-      "Bulk CSV import & scheduling",
-      "10GB media storage",
-      "API access & webhooks",
-      "Dedicated onboarding & support",
-    ],
-    cta: "Start Free Trial",
-    highlighted: false,
-  },
-];
-
 const Index = () => {
   const { user } = useAuth();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(true);
-  const [billing, setBilling] = useState<Billing>("monthly");
+  const [billing, setBilling] = useState<BillingInterval>("monthly");
 
   const togglePlay = () => {
     if (!videoRef.current) return;
@@ -435,9 +375,9 @@ const Index = () => {
             <div className="w-16 h-16 rounded-2xl bg-google-green/10 flex items-center justify-center mx-auto mb-4">
               <BarChart3 className="w-8 h-8 text-google-green" />
             </div>
-            <h3 className="text-xl font-medium mb-2 text-black">Track Results</h3>
+            <h3 className="text-xl font-medium mb-2 text-black">Stay Organized</h3>
             <p className="text-muted-foreground">
-              Monitor engagement, reach, and performance across all your social channels.
+              See drafts, scheduled posts, published posts, and failures in one workflow.
             </p>
           </Card>
         </div>
@@ -475,7 +415,7 @@ const Index = () => {
 
         {/* Pricing Cards */}
         <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {plans.map((plan) => {
+          {productPlans.map((plan) => {
             const isFree = plan.monthly === 0;
             const amount = billing === "monthly" ? plan.monthly : plan.yearly;
             return (
@@ -517,7 +457,10 @@ const Index = () => {
                   ))}
                 </ul>
 
-                <Link to="/signup">
+                <Link
+                  to={plan.id === "free" ? "/signup" : `/signup?plan=${plan.id}&billing=${billing}`}
+                  onClick={() => trackEvent("pricing_cta_clicked", { plan: plan.id, billing, location: "homepage" })}
+                >
                   <Button
                     className="w-full"
                     variant={plan.highlighted ? "default" : "outline"}
@@ -548,15 +491,15 @@ const Index = () => {
           />
           <FAQItem 
             question="Which platforms are supported?"
-            answer="Post supports all major social platforms including Twitter/X, LinkedIn, Instagram, Facebook, YouTube, TikTok, Threads, WhatsApp, Telegram, and Snapchat."
+            answer="Post supports Twitter/X, LinkedIn, Instagram, Facebook, YouTube, TikTok, and Threads."
           />
           <FAQItem 
             question="Can I schedule the same post to multiple platforms?"
-            answer="Yes! Create your content once and schedule it across all your connected platforms with a single click. Post will optimize the format for each platform."
+            answer="Yes. Create the post once, customize the copy or media for each platform where needed, then schedule it across your selected accounts."
           />
           <FAQItem 
             question="Is there a free plan?"
-            answer="Yes, we offer a free plan that includes 1 social account and 10 scheduled posts per month. Perfect for getting started. Upgrade anytime for unlimited posts and more accounts."
+            answer="Yes, the free plan includes 2 connected social platforms and 10 scheduled posts per month. Upgrade anytime for more accounts and unlimited scheduling."
           />
           <FAQItem 
             question="How far in advance can I schedule posts?"
@@ -569,7 +512,7 @@ const Index = () => {
       <section className="container mx-auto px-6 py-20 text-center">
         <h2 className="font-reckless text-4xl font-medium mb-6 text-black">Ready to simplify your social media?</h2>
         <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-          Join thousands of creators who schedule smarter with Post.
+          Join 500+ marketers who plan and publish with Post.
         </p>
         <Link to="/signup">
           <Button size="lg" className="text-sm">

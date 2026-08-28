@@ -42,25 +42,34 @@ serve(async (req) => {
     logStep("User authenticated", { userId: user.id, email: user.email });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-    
-    let customerId;
-    if (customers.data.length === 0) {
+    const { data: subscription } = await supabaseClient
+      .from("subscriptions")
+      .select("stripe_customer_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    const customers = subscription?.stripe_customer_id
+      ? null
+      : await stripe.customers.list({ email: user.email, limit: 1 });
+
+    let customerId = subscription?.stripe_customer_id;
+    if (!customerId && customers?.data.length === 0) {
       logStep("No Stripe customer found, creating new customer");
       const customer = await stripe.customers.create({
         email: user.email,
+        metadata: { user_id: user.id },
       });
       customerId = customer.id;
       logStep("Created new Stripe customer", { customerId });
-    } else {
-      customerId = customers.data[0].id;
+    } else if (!customerId) {
+      customerId = customers!.data[0].id;
       logStep("Found Stripe customer", { customerId });
     }
+    if (!customerId) throw new Error("Stripe customer could not be resolved");
 
     const origin = req.headers.get("origin") || "http://localhost:3000";
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: customerId,
-      return_url: `${origin}/dashboard/account`,
+      return_url: `${origin}/dashboard/account/plans`,
     });
     logStep("Customer portal session created", { sessionId: portalSession.id, url: portalSession.url });
 

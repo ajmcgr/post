@@ -21,10 +21,7 @@ import YouTube from "./pages/platforms/YouTube";
 import TikTok from "./pages/platforms/TikTok";
 import Twitter from "./pages/platforms/Twitter";
 import Facebook from "./pages/platforms/Facebook";
-import WhatsApp from "./pages/platforms/WhatsApp";
-import Telegram from "./pages/platforms/Telegram";
 import Threads from "./pages/platforms/Threads";
-import Snapchat from "./pages/platforms/Snapchat";
 import HashtagGenerator from "./pages/tools/HashtagGenerator";
 import ContentPlanner from "./pages/tools/ContentPlanner";
 import InfluencerRateCalculator from "./pages/tools/InfluencerRateCalculator";
@@ -127,10 +124,7 @@ const App = () => (
       <Route path="/platforms/tiktok" element={<TikTok />} />
       <Route path="/platforms/twitter" element={<Twitter />} />
       <Route path="/platforms/facebook" element={<Facebook />} />
-      <Route path="/platforms/whatsapp" element={<WhatsApp />} />
-      <Route path="/platforms/telegram" element={<Telegram />} />
       <Route path="/platforms/threads" element={<Threads />} />
-      <Route path="/platforms/snapchat" element={<Snapchat />} />
 
       {/* Tools Pages */}
       <Route path="/tools" element={<Tools />} />

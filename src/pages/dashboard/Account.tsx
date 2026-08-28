@@ -8,9 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { useSubscription } from "@/hooks/useSubscription";
 
 const Account = () => {
   const { user, signOut } = useAuth();
+  const { plan } = useSubscription();
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [changingPassword, setChangingPassword] = useState(false);
@@ -42,8 +44,13 @@ const Account = () => {
     setChangingPassword(false);
   };
 
-  const handleManageBilling = () => {
-    window.open("https://billing.stripe.com/p/login/fZu28s0G63tj31Xa9f2sM00", "_blank");
+  const handleManageBilling = async () => {
+    const { data, error } = await supabase.functions.invoke("customer-portal");
+    if (error || !data?.url) {
+      toast.error(data?.error || error?.message || "Unable to open billing");
+      return;
+    }
+    window.location.assign(data.url);
   };
 
   const handleDeleteAccount = async () => {
@@ -82,7 +89,7 @@ const Account = () => {
               </div>
               <div>
                 <p className="font-medium">{user?.email}</p>
-                <p className="text-sm text-muted-foreground">Creator Plan</p>
+                <p className="text-sm text-muted-foreground capitalize">{plan} Plan</p>
               </div>
             </div>
           </CardContent>
@@ -140,7 +147,7 @@ const Account = () => {
             </p>
             <Button 
               variant="default"
-              onClick={() => window.open('/pricing', '_blank')}
+              onClick={() => window.location.assign('/dashboard/account/plans')}
             >
               View Plans
             </Button>
@@ -159,6 +166,7 @@ const Account = () => {
             <Button 
               onClick={handleManageBilling}
               variant="outline"
+              disabled={plan === "free"}
             >
               Manage Billing
             </Button>

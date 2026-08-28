@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
@@ -19,11 +19,14 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { useSubscription } from "@/hooks/useSubscription";
+import { trackEvent } from "@/lib/analytics";
 
 const TAB_LIST = ["profile", "team", "integrations", "notifications", "account", "billing"] as const;
 
 const Settings = () => {
   const { user, signOut } = useAuth();
+  const { plan, status } = useSubscription();
   const [tab, setTab] = useState<(typeof TAB_LIST)[number]>("profile");
 
   // Profile
@@ -33,12 +36,27 @@ const Settings = () => {
   const [savingProfile, setSavingProfile] = useState(false);
 
   // Notifications
-  const [emailPostSuccess, setEmailPostSuccess] = useState(true);
+  const [emailConnectionSuccess, setEmailConnectionSuccess] = useState(true);
   const [emailPostFail, setEmailPostFail] = useState(true);
-  const [emailProduct, setEmailProduct] = useState(false);
+  const [savingNotifications, setSavingNotifications] = useState(false);
 
   // Account
   const [deletingAccount, setDeletingAccount] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("notification_preferences")
+      .select("connection_success,post_failed")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) {
+          setEmailConnectionSuccess(data.connection_success);
+          setEmailPostFail(data.post_failed);
+        }
+      });
+  }, [user]);
 
   const handleSaveProfile = async () => {
     setSavingProfile(true);
@@ -53,6 +71,10 @@ const Settings = () => {
         if (error) throw error;
         setNewPassword("");
       }
+      const { error: profileError } = await supabase.auth.updateUser({
+        data: { username: username.trim().replace(/^@/, "") },
+      });
+      if (profileError) throw profileError;
       toast.success("Profile saved");
     } catch (e: any) {
       toast.error(e.message || "Failed to save profile");
@@ -61,8 +83,28 @@ const Settings = () => {
     }
   };
 
-  const handleManageBilling = () => {
-    window.open("https://billing.stripe.com/p/login/fZu28s0G63tj31Xa9f2sM00", "_blank");
+  const handleManageBilling = async () => {
+    trackEvent("billing_portal_opened", { plan });
+    const { data, error } = await supabase.functions.invoke("customer-portal");
+    if (error || !data?.url) {
+      toast.error(data?.error || error?.message || "Unable to open billing");
+      return;
+    }
+    window.location.assign(data.url);
+  };
+
+  const handleSaveNotifications = async () => {
+    if (!user) return;
+    setSavingNotifications(true);
+    const { error } = await supabase.from("notification_preferences").upsert({
+      user_id: user.id,
+      connection_success: emailConnectionSuccess,
+      post_failed: emailPostFail,
+      updated_at: new Date().toISOString(),
+    });
+    setSavingNotifications(false);
+    if (error) toast.error("Failed to save notification preferences");
+    else toast.success("Notification preferences saved");
   };
 
   const handleDeleteAccount = async () => {
@@ -168,10 +210,10 @@ const Settings = () => {
               <h2 className="font-semibold">Email notifications</h2>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium">Post published successfully</p>
-                  <p className="text-xs text-muted-foreground">Get notified when a post is published</p>
+                  <p className="text-sm font-medium">Account connected</p>
+                  <p className="text-xs text-muted-foreground">Confirmation when a social account connects</p>
                 </div>
-                <Switch checked={emailPostSuccess} onCheckedChange={setEmailPostSuccess} />
+                <Switch checked={emailConnectionSuccess} onCheckedChange={setEmailConnectionSuccess} />
               </div>
               <div className="flex items-center justify-between">
                 <div>
@@ -180,13 +222,9 @@ const Settings = () => {
                 </div>
                 <Switch checked={emailPostFail} onCheckedChange={setEmailPostFail} />
               </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">Product updates</p>
-                  <p className="text-xs text-muted-foreground">News, tips, and new features</p>
-                </div>
-                <Switch checked={emailProduct} onCheckedChange={setEmailProduct} />
-              </div>
+              <Button onClick={handleSaveNotifications} disabled={savingNotifications}>
+                {savingNotifications ? "Saving..." : "Save preferences"}
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -243,11 +281,11 @@ const Settings = () => {
               <h2 className="font-semibold">Billing</h2>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium">Creator Plan</p>
-                  <p className="text-xs text-muted-foreground">Manage subscription and invoices</p>
+                  <p className="text-sm font-medium capitalize">{plan} Plan</p>
+                  <p className="text-xs text-muted-foreground">{plan === "free" ? "Upgrade for more accounts and unlimited scheduling" : `${status} subscription`}</p>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" onClick={handleManageBilling}>
+                  <Button variant="outline" onClick={handleManageBilling} disabled={plan === "free"}>
                     Manage billing
                   </Button>
                   <Button onClick={() => window.open("/pricing", "_blank")}>Upgrade</Button>

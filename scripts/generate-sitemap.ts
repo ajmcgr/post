@@ -40,10 +40,7 @@ const staticPaths = [
   "/platforms/tiktok",
   "/platforms/twitter",
   "/platforms/facebook",
-  "/platforms/whatsapp",
-  "/platforms/telegram",
   "/platforms/threads",
-  "/platforms/snapchat",
 ];
 
 const entries: SitemapEntry[] = [

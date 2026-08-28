@@ -130,6 +130,20 @@ Deno.serve(async (req) => {
 
     if (!email) throw new Error('Recipient email could not be resolved');
 
+    if (userId) {
+      const { data: preferences } = await admin
+        .from('notification_preferences')
+        .select('connection_success,post_failed')
+        .eq('user_id', userId)
+        .maybeSingle();
+      if (body.type === 'connection_success' && preferences?.connection_success === false) {
+        return new Response(JSON.stringify({ success: true, skipped: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      if (body.type === 'post_failed' && preferences?.post_failed === false) {
+        return new Response(JSON.stringify({ success: true, skipped: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+    }
+
     const resendKey = Deno.env.get('RESEND_API_KEY');
     if (!resendKey) throw new Error('RESEND_API_KEY not configured');
     const resend = new Resend(resendKey);

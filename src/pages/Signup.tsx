@@ -3,11 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
+import { trackEvent } from "@/lib/analytics";
 
 const Signup = () => {
   const [fullName, setFullName] = useState("");
@@ -16,26 +17,35 @@ const Signup = () => {
   const [loading, setLoading] = useState(false);
   const { signUp, signInWithGoogle, user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const query = new URLSearchParams(location.search);
+  const selectedPlan = query.get("plan");
+  const billing = query.get("billing");
+  const destination = selectedPlan === "pro" || selectedPlan === "business"
+    ? `/dashboard/account/plans?plan=${selectedPlan}&billing=${billing === "yearly" ? "yearly" : "monthly"}`
+    : "/dashboard";
 
   useEffect(() => {
     if (user) {
-      navigate("/dashboard");
+      navigate(destination);
     }
-  }, [user, navigate]);
+  }, [user, navigate, destination]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     const { error } = await signUp(email, password, fullName);
     if (!error) {
-      navigate("/dashboard");
+      trackEvent("signup_completed", { method: "email", selected_plan: selectedPlan ?? "free" });
+      navigate(destination);
     }
     setLoading(false);
   };
 
   const handleGoogleSignUp = async () => {
     setLoading(true);
-    await signInWithGoogle();
+    trackEvent("signup_started", { method: "google", selected_plan: selectedPlan ?? "free" });
+    await signInWithGoogle(destination);
     setLoading(false);
   };
 

@@ -126,22 +126,7 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://trypost.ai/platforms/whatsapp</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://trypost.ai/platforms/telegram</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
     <loc>https://trypost.ai/platforms/threads</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://trypost.ai/platforms/snapchat</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
