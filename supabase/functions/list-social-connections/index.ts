@@ -1,5 +1,6 @@
-import { getAuthenticatedOAuthContext } from '../_shared/oauth-auth.ts';
-import { CONNECTION_METADATA_SELECT } from '../_shared/social-connection-fields.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const CONNECTION_METADATA_SELECT = 'id,platform,platform_username,is_connected,updated_at';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,7 +12,18 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
-    const { admin, user } = await getAuthenticatedOAuthContext(req);
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) throw new Error('Missing authorization header');
+
+    const admin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      { auth: { persistSession: false } },
+    );
+    const token = authHeader.replace(/^Bearer\s+/i, '');
+    const { data: { user }, error: authError } = await admin.auth.getUser(token);
+    if (authError || !user) throw new Error('Unauthorized');
+
     const { data, error } = await admin
       .from('oauth_connections')
       .select(CONNECTION_METADATA_SELECT)

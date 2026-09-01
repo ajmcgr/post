@@ -1,5 +1,4 @@
-import { getAuthenticatedOAuthContext } from '../_shared/oauth-auth.ts';
-import { assertConnectionOwner } from '../_shared/connection-ownership.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -76,7 +75,18 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
-    const { admin, user } = await getAuthenticatedOAuthContext(req);
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) throw new Error('Missing authorization header');
+
+    const admin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      { auth: { persistSession: false } },
+    );
+    const token = authHeader.replace(/^Bearer\s+/i, '');
+    const { data: { user }, error: authError } = await admin.auth.getUser(token);
+    if (authError || !user) throw new Error('Unauthorized');
+
     const { connectionId } = await req.json();
     if (!connectionId || typeof connectionId !== 'string') throw new Error('Missing connectionId');
 
@@ -94,9 +104,7 @@ Deno.serve(async (req) => {
     }
 
     const connection = data as StoredConnection;
-    try {
-      assertConnectionOwner(connection, user.id);
-    } catch {
+    if (connection.user_id !== user.id) {
       return new Response(JSON.stringify({ error: 'Forbidden' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
