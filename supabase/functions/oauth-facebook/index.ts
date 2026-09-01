@@ -1,4 +1,5 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { getAuthenticatedOAuthContext } from '../_shared/oauth-auth.ts';
+import { createSupabaseOAuthStateRepository, issueOAuthState, validateAndConsumeOAuthState } from '../_shared/oauth-state.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -17,11 +18,13 @@ function resolveRedirectUri(redirectUri: string | null | undefined, platform: st
 function buildMetaAuthUrl(appId: string, redirectUri: string, options: {
   configId?: string | null;
   scope?: string | null;
+  state: string;
 }) {
   const params = new URLSearchParams({
     client_id: appId,
     redirect_uri: redirectUri,
     response_type: 'code',
+    state: options.state,
   });
 
   if (options.configId) {
@@ -51,7 +54,9 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { code, redirect_uri } = await req.json();
+    const { admin, user } = await getAuthenticatedOAuthContext(req);
+    const stateRepository = createSupabaseOAuthStateRepository(admin);
+    const { code, redirect_uri, state } = await req.json();
 
     if (!code) {
       // Prefer Facebook Login for Business when a page-posting config is available.
@@ -59,7 +64,8 @@ Deno.serve(async (req) => {
       const configId = Deno.env.get('META_FACEBOOK_CONFIG_ID');
       const redirectUri = resolveRedirectUri(redirect_uri, 'facebook', req.headers.get('origin'));
       const scope = 'pages_manage_posts,pages_read_engagement,pages_show_list,business_management';
-      const authUrl = buildMetaAuthUrl(appId ?? '', redirectUri, { configId, scope });
+      const authState = await issueOAuthState(stateRepository, user.id, 'facebook');
+      const authUrl = buildMetaAuthUrl(appId ?? '', redirectUri, { configId, scope, state: authState });
       
       return new Response(
         JSON.stringify({ authUrl }),
@@ -67,22 +73,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('Missing authorization header');
-    }
-
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      console.error('Facebook callback auth failure:', userError);
-      throw new Error('Unauthorized');
-    }
+    await validateAndConsumeOAuthState(stateRepository, user.id, 'facebook', state);
 
     // Exchange code for token
     const appId = Deno.env.get('FACEBOOK_APP_ID');
@@ -107,7 +98,7 @@ Deno.serve(async (req) => {
     }
 
     // Store connection
-    const { error: dbError } = await supabase
+    const { error: dbError } = await admin
       .from('oauth_connections')
       .upsert({
         user_id: user.id,

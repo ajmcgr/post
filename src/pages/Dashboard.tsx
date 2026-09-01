@@ -7,13 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2 } from 'lucide-react';
-
-interface OAuthConnection {
-  id: string;
-  platform: string;
-  platform_username: string | null;
-  is_connected: boolean;
-}
+import { disconnectSocialConnection, listSocialConnections, type SocialConnectionMetadata } from '@/lib/socialConnections';
 
 const platforms = [
   { id: 'twitter', name: 'Twitter / X', icon: '𝕏' },
@@ -28,7 +22,7 @@ const platforms = [
 const Dashboard = () => {
   const { user, loading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
-  const [connections, setConnections] = useState<OAuthConnection[]>([]);
+  const [connections, setConnections] = useState<SocialConnectionMetadata[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -57,13 +51,10 @@ const Dashboard = () => {
   }, [user]);
 
   const loadConnections = async () => {
-    const { data, error } = await supabase
-      .from('oauth_connections')
-      .select('*')
-      .eq('user_id', user?.id);
-
-    if (!error && data) {
-      setConnections(data);
+    try {
+      setConnections(await listSocialConnections());
+    } catch (error) {
+      console.error('Failed to load connections:', error);
     }
     setLoading(false);
   };
@@ -105,12 +96,13 @@ const Dashboard = () => {
   };
 
   const handleDisconnect = async (connectionId: string) => {
-    await supabase
-      .from('oauth_connections')
-      .delete()
-      .eq('id', connectionId);
-    
-    loadConnections();
+    try {
+      await disconnectSocialConnection(connectionId);
+      await loadConnections();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      alert(`Failed to disconnect account: ${message}`);
+    }
   };
 
   if (authLoading || loading) {

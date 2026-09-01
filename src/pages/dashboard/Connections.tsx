@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSubscription } from '@/hooks/useSubscription';
 import { getPlan } from '@/data/plans';
 import { trackEvent } from '@/lib/analytics';
+import { disconnectSocialConnection, listSocialConnections, type SocialConnectionMetadata } from '@/lib/socialConnections';
 import facebookLogo from "@/assets/facebook.svg";
 import xLogo from "@/assets/x.svg";
 import linkedinLogo from "@/assets/linkedin.svg";
@@ -17,13 +18,6 @@ import instagramLogo from "@/assets/instagram.svg";
 import youtubeLogo from "@/assets/youtube.svg";
 import threadsLogo from "@/assets/threads.svg";
 import tiktokLogo from "@/assets/tiktok.svg";
-
-interface OAuthConnection {
-  id: string;
-  platform: string;
-  platform_username: string | null;
-  is_connected: boolean;
-}
 
 const platforms = [
   { id: 'twitter', name: 'Twitter / X', icon: xLogo },
@@ -39,7 +33,7 @@ const Connections = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { plan } = useSubscription();
-  const [connections, setConnections] = useState<OAuthConnection[]>([]);
+  const [connections, setConnections] = useState<SocialConnectionMetadata[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -49,13 +43,10 @@ const Connections = () => {
   }, [user]);
 
   const loadConnections = async () => {
-    const { data, error } = await supabase
-      .from('oauth_connections')
-      .select('*')
-      .eq('user_id', user?.id);
-
-    if (!error && data) {
-      setConnections(data);
+    try {
+      setConnections(await listSocialConnections());
+    } catch (error) {
+      console.error('Failed to load connections:', error);
     }
     setLoading(false);
   };
@@ -111,12 +102,12 @@ const Connections = () => {
   };
 
   const handleDisconnect = async (connectionId: string) => {
-    await supabase
-      .from('oauth_connections')
-      .delete()
-      .eq('id', connectionId);
-    
-    loadConnections();
+    try {
+      await disconnectSocialConnection(connectionId);
+      await loadConnections();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to disconnect account');
+    }
   };
 
   if (loading) {

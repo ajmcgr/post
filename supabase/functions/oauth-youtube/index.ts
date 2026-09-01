@@ -1,4 +1,5 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { getAuthenticatedOAuthContext } from '../_shared/oauth-auth.ts';
+import { createSupabaseOAuthStateRepository, issueOAuthState, validateAndConsumeOAuthState } from '../_shared/oauth-state.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,36 +13,25 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('Missing authorization header');
-    }
-
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      throw new Error('Unauthorized');
-    }
-
-    const { code, redirect_uri } = await req.json();
+    const { admin, user } = await getAuthenticatedOAuthContext(req);
+    const stateRepository = createSupabaseOAuthStateRepository(admin);
+    const { code, redirect_uri, state } = await req.json();
 
     if (!code) {
       // Return authorization URL
       const clientId = Deno.env.get('YOUTUBE_CLIENT_ID');
       const redirectUri = `${redirect_uri || req.headers.get('origin')}/oauth/youtube/callback`;
       const scope = 'https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube';
-      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scope)}&access_type=offline`;
+      const authState = await issueOAuthState(stateRepository, user.id, 'youtube');
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scope)}&access_type=offline&state=${encodeURIComponent(authState)}`;
       
       return new Response(
         JSON.stringify({ authUrl }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    await validateAndConsumeOAuthState(stateRepository, user.id, 'youtube', state);
 
     // Exchange code for token
     const clientId = Deno.env.get('YOUTUBE_CLIENT_ID');
@@ -77,7 +67,7 @@ Deno.serve(async (req) => {
     const channel = channelData.items?.[0];
 
     // Store connection
-    const { error: dbError } = await supabase
+    const { error: dbError } = await admin
       .from('oauth_connections')
       .upsert({
         user_id: user.id,

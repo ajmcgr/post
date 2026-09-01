@@ -36,6 +36,7 @@ const OAuthCallback = () => {
       const code = params.get('code');
       const oauthToken = params.get('oauth_token');
       const oauthVerifier = params.get('oauth_verifier');
+      const state = params.get('state');
       const error = params.get('error');
 
       if (error) {
@@ -65,6 +66,7 @@ const OAuthCallback = () => {
             code,
             oauth_token: oauthToken,
             oauth_verifier: oauthVerifier,
+            state,
             redirect_uri: getOAuthCallbackUrl(platform),
           },
         });

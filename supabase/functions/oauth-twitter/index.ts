@@ -1,5 +1,6 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { createHmac } from 'node:crypto';
+import { getAuthenticatedOAuthContext } from '../_shared/oauth-auth.ts';
+import { generateSecureOAuthNonce } from '../_shared/oauth-nonce.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -44,7 +45,7 @@ function generateOAuthHeader(method: string, url: string, extraParams: Record<st
 
   const oauthParams: Record<string, string> = {
     oauth_consumer_key: API_KEY!,
-    oauth_nonce: Math.random().toString(36).substring(2),
+    oauth_nonce: generateSecureOAuthNonce(),
     oauth_signature_method: 'HMAC-SHA1',
     oauth_timestamp: Math.floor(Date.now() / 1000).toString(),
     oauth_version: '1.0',
@@ -74,21 +75,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('Missing authorization header');
-    }
-
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      throw new Error('Unauthorized');
-    }
+    const { admin, user } = await getAuthenticatedOAuthContext(req);
 
     const { oauth_token, oauth_verifier, redirect_uri } = await req.json();
 
@@ -109,7 +96,7 @@ Deno.serve(async (req) => {
         throw new Error(`Twitter request token error: ${requestTokenResponse.status}`);
       }
 
-      const { error: tempError } = await supabase
+      const { error: tempError } = await admin
         .from('oauth_connections')
         .upsert({
           user_id: user.id,
@@ -135,7 +122,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { data: tempConnection, error: tempLookupError } = await supabase
+    const { data: tempConnection, error: tempLookupError } = await admin
       .from('oauth_connections')
       .select('access_token_secret')
       .eq('user_id', user.id)
@@ -165,7 +152,7 @@ Deno.serve(async (req) => {
       throw new Error(`Twitter access token error: ${accessTokenResponse.status}`);
     }
 
-    const { error: dbError } = await supabase
+    const { error: dbError } = await admin
       .from('oauth_connections')
       .upsert({
         user_id: user.id,

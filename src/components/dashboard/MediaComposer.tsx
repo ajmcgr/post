@@ -32,6 +32,7 @@ import tiktokIcon from '@/assets/tiktok.svg';
 import { trackEvent } from '@/lib/analytics';
 import { useSubscription } from '@/hooks/useSubscription';
 import { canSchedulePost } from '@/lib/entitlements';
+import { listSocialConnections, type SocialConnectionMetadata } from '@/lib/socialConnections';
 
 const platformIcons: Record<string, string> = {
   twitter: twitterIcon,
@@ -53,13 +54,6 @@ const platformNames: Record<string, string> = {
   tiktok: 'TikTok',
 };
 
-interface OAuthConnection {
-  id: string;
-  platform: string;
-  platform_username: string | null;
-  is_connected: boolean;
-}
-
 interface MediaComposerProps {
   kind: 'image' | 'video';
   title: string;
@@ -71,7 +65,7 @@ const MediaComposer = ({ kind, title }: MediaComposerProps) => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [content, setContent] = useState('');
-  const [connections, setConnections] = useState<OAuthConnection[]>([]);
+  const [connections, setConnections] = useState<SocialConnectionMetadata[]>([]);
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [media, setMedia] = useState<MediaRef[]>([]);
   const [loading, setLoading] = useState(true);
@@ -94,11 +88,11 @@ const MediaComposer = ({ kind, title }: MediaComposerProps) => {
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const [{ data: conns }, { data: queue }] = await Promise.all([
-        supabase.from('oauth_connections').select('*').eq('user_id', user.id).eq('is_connected', true),
+      const [connectionsResult, { data: queue }] = await Promise.all([
+        listSocialConnections(),
         supabase.from('queue_settings').select('slots').eq('user_id', user.id).maybeSingle(),
       ]);
-      if (conns) setConnections(conns);
+      setConnections(connectionsResult.filter((connection) => connection.is_connected));
       if (queue?.slots) setQueueSlots(queue.slots as QueueSlot[]);
       setLoading(false);
     })();

@@ -1,4 +1,5 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { getAuthenticatedOAuthContext } from '../_shared/oauth-auth.ts';
+import { createSupabaseOAuthStateRepository, issueOAuthState, validateAndConsumeOAuthState } from '../_shared/oauth-state.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -61,6 +62,8 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const { admin, user } = await getAuthenticatedOAuthContext(req);
+    const stateRepository = createSupabaseOAuthStateRepository(admin);
     const { code, redirect_uri, state } = await req.json();
 
     if (!code) {
@@ -68,7 +71,7 @@ Deno.serve(async (req) => {
       const clientId = Deno.env.get('LINKEDIN_CLIENT_ID');
       const redirectUri = resolveRedirectUri(redirect_uri, req.headers.get('origin'));
       const scope = 'r_liteprofile w_member_social';
-      const authState = state || crypto.randomUUID();
+      const authState = await issueOAuthState(stateRepository, user.id, 'linkedin');
       const authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${encodeURIComponent(authState)}&scope=${encodeURIComponent(scope)}`;
       
       return new Response(
@@ -77,22 +80,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('Missing authorization header');
-    }
-
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      console.error('LinkedIn callback auth failure:', userError);
-      throw new Error('Unauthorized');
-    }
+    await validateAndConsumeOAuthState(stateRepository, user.id, 'linkedin', state);
 
     // Exchange code for token
     const clientId = Deno.env.get('LINKEDIN_CLIENT_ID');
@@ -121,7 +109,7 @@ Deno.serve(async (req) => {
     const profileData = await fetchLinkedInProfile(tokenData.access_token);
 
     // Store connection
-    const { error: dbError } = await supabase
+    const { error: dbError } = await admin
       .from('oauth_connections')
       .upsert({
         user_id: user.id,

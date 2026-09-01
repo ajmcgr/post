@@ -13,6 +13,7 @@ import youtubeLogo from "@/assets/youtube.svg";
 import threadsLogo from "@/assets/threads.svg";
 import tiktokLogo from "@/assets/tiktok.svg";
 import { trackEvent } from "@/lib/analytics";
+import { listSocialConnections } from "@/lib/socialConnections";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -29,10 +30,10 @@ const Home = () => {
 
   const loadProgress = async () => {
     const [connectionsResult, postsResult] = await Promise.all([
-      supabase.from("oauth_connections").select("id", { count: "exact", head: true }).eq("user_id", user?.id).eq("is_connected", true),
+      listSocialConnections(),
       supabase.from("posts").select("id", { count: "exact", head: true }).eq("user_id", user?.id),
     ]);
-    setConnectionCount(connectionsResult.count ?? 0);
+    setConnectionCount(connectionsResult.filter((connection) => connection.is_connected).length);
     setPostCount(postsResult.count ?? 0);
     setLoading(false);
   };

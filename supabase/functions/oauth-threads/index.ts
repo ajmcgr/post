@@ -1,4 +1,5 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { getAuthenticatedOAuthContext } from '../_shared/oauth-auth.ts';
+import { createSupabaseOAuthStateRepository, issueOAuthState, validateAndConsumeOAuthState } from '../_shared/oauth-state.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -29,14 +30,17 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { code, redirect_uri } = await req.json();
+    const { admin, user } = await getAuthenticatedOAuthContext(req);
+    const stateRepository = createSupabaseOAuthStateRepository(admin);
+    const { code, redirect_uri, state } = await req.json();
 
     if (!code) {
       // Return authorization URL (Threads uses Meta's OAuth)
       const appId = Deno.env.get('THREADS_APP_ID');
       const redirectUri = resolveRedirectUri(redirect_uri, 'threads', req.headers.get('origin'));
       const scope = 'threads_basic,threads_content_publish';
-      const authUrl = `https://threads.net/oauth/authorize?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&response_type=code`;
+      const authState = await issueOAuthState(stateRepository, user.id, 'threads');
+      const authUrl = `https://threads.net/oauth/authorize?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&response_type=code&state=${encodeURIComponent(authState)}`;
       
       return new Response(
         JSON.stringify({ authUrl }),
@@ -44,22 +48,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('Missing authorization header');
-    }
-
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      console.error('Threads callback auth failure:', userError);
-      throw new Error('Unauthorized');
-    }
+    await validateAndConsumeOAuthState(stateRepository, user.id, 'threads', state);
 
     // Exchange code for token
     const appId = Deno.env.get('THREADS_APP_ID');
@@ -113,7 +102,7 @@ Deno.serve(async (req) => {
     }
 
     // Store connection
-    const { error: dbError } = await supabase
+    const { error: dbError } = await admin
       .from('oauth_connections')
       .upsert({
         user_id: user.id,

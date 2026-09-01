@@ -1,4 +1,5 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { getAuthenticatedOAuthContext } from '../_shared/oauth-auth.ts';
+import { createSupabaseOAuthStateRepository, issueOAuthState, validateAndConsumeOAuthState } from '../_shared/oauth-state.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -54,30 +55,16 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('Missing authorization header');
-    }
-
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      throw new Error('Unauthorized');
-    }
-
-    const { code, redirect_uri } = await req.json();
+    const { admin, user } = await getAuthenticatedOAuthContext(req);
+    const stateRepository = createSupabaseOAuthStateRepository(admin);
+    const { code, redirect_uri, state } = await req.json();
 
     if (!code) {
       // Return authorization URL
       const { clientKey } = getTikTokCredentials();
       const redirectUri = resolveRedirectUri(redirect_uri, req.headers.get('origin'));
       const scope = 'user.info.basic,video.upload';
-      const csrfState = Math.random().toString(36).substring(2);
+      const csrfState = await issueOAuthState(stateRepository, user.id, 'tiktok');
 
       if (!clientKey) {
         throw new Error('TikTok client key is not configured');
@@ -97,6 +84,8 @@ Deno.serve(async (req) => {
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    await validateAndConsumeOAuthState(stateRepository, user.id, 'tiktok', state);
 
     // Exchange code for token
     const { clientKey, clientSecret } = getTikTokCredentials();
@@ -146,7 +135,7 @@ Deno.serve(async (req) => {
     }
 
     // Store connection
-    const { error: dbError } = await supabase
+    const { error: dbError } = await admin
       .from('oauth_connections')
       .upsert({
         user_id: user.id,

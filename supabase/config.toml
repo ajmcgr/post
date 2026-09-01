@@ -4,25 +4,31 @@ project_id = "qfqowhetrxritoyjzzcz"
 verify_jwt = false
 
 [functions.oauth-twitter]
-verify_jwt = false
+verify_jwt = true
 
 [functions.oauth-linkedin]
-verify_jwt = false
+verify_jwt = true
 
 [functions.oauth-instagram]
-verify_jwt = false
+verify_jwt = true
 
 [functions.oauth-facebook]
-verify_jwt = false
+verify_jwt = true
 
 [functions.oauth-youtube]
-verify_jwt = false
+verify_jwt = true
 
 [functions.oauth-threads]
-verify_jwt = false
+verify_jwt = true
 
 [functions.oauth-tiktok]
-verify_jwt = false
+verify_jwt = true
+
+[functions.list-social-connections]
+verify_jwt = true
+
+[functions.disconnect-social-account]
+verify_jwt = true
 
 [functions.meta-deauthorize]
 verify_jwt = false
