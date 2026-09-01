@@ -128,7 +128,7 @@ const Pricing = () => {
           <div>
             <h3 className="font-semibold text-lg mb-2">Is there a free trial?</h3>
             <p className="text-muted-foreground">
-              Yes! All paid plans include a 14-day free trial. No credit card required.
+              Yes! All paid plans include a 14-day free trial. You won't be charged until the trial ends.
             </p>
           </div>
           <div>

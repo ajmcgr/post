@@ -7,6 +7,18 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const allowedOrigins = new Set([
+  "https://trypost.ai",
+  "https://www.trypost.ai",
+  "http://localhost:3000",
+  "http://localhost:5173",
+]);
+
+const getSafeOrigin = (req: Request) => {
+  const origin = req.headers.get("origin") ?? "";
+  return allowedOrigins.has(origin) ? origin : "https://trypost.ai";
+};
+
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[CUSTOMER-PORTAL] ${step}${detailsStr}`);
@@ -66,7 +78,7 @@ serve(async (req) => {
     }
     if (!customerId) throw new Error("Stripe customer could not be resolved");
 
-    const origin = req.headers.get("origin") || "http://localhost:3000";
+    const origin = getSafeOrigin(req);
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: customerId,
       return_url: `${origin}/dashboard/account/plans`,

@@ -85,7 +85,6 @@ interface FailureResult { platform: string; success: boolean; error?: string }
 interface NotifyRequest {
   type: 'connection_success' | 'post_failed';
   userId?: string;
-  email?: string;
   platform?: string;
   platformUsername?: string | null;
   content?: string;
@@ -107,25 +106,34 @@ Deno.serve(async (req) => {
     const body = (await req.json()) as NotifyRequest;
     if (!body?.type) throw new Error('Missing type');
 
-    // Resolve recipient email.
-    let email = body.email;
-    let userId = body.userId;
+    const authHeader = req.headers.get('Authorization');
+    const token = authHeader?.replace(/^Bearer\s+/i, '');
+    if (!token) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
-    if (!email) {
-      // Try to authenticate the caller and use their email.
-      const authHeader = req.headers.get('Authorization');
-      if (authHeader) {
-        const token = authHeader.replace(/^Bearer\s+/i, '');
-        const { data: { user } } = await admin.auth.getUser(token);
-        if (user) {
-          email = user.email ?? undefined;
-          userId = userId ?? user.id;
-        }
+    let userId: string | undefined;
+    let email: string | undefined;
+
+    if (token === serviceKey) {
+      if (!body.userId) throw new Error('Missing userId for internal notification');
+      const { data, error } = await admin.auth.admin.getUserById(body.userId);
+      if (error) throw error;
+      userId = data.user?.id;
+      email = data.user?.email ?? undefined;
+    } else {
+      const { data: { user }, error } = await admin.auth.getUser(token);
+      if (error || !user) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
-      if (!email && userId) {
-        const { data } = await admin.auth.admin.getUserById(userId);
-        email = data.user?.email ?? undefined;
-      }
+      userId = user.id;
+      email = user.email ?? undefined;
     }
 
     if (!email) throw new Error('Recipient email could not be resolved');

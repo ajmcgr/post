@@ -14,6 +14,18 @@ const priceEnv: Record<string, string> = {
   "business:yearly": "STRIPE_BUSINESS_YEARLY_PRICE_ID",
 };
 
+const allowedOrigins = new Set([
+  "https://trypost.ai",
+  "https://www.trypost.ai",
+  "http://localhost:3000",
+  "http://localhost:5173",
+]);
+
+const getSafeOrigin = (req: Request) => {
+  const origin = req.headers.get("origin") ?? "";
+  return allowedOrigins.has(origin) ? origin : "https://trypost.ai";
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -41,7 +53,7 @@ serve(async (req) => {
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     const { data: existing } = await admin
       .from("subscriptions")
-      .select("stripe_customer_id")
+      .select("stripe_customer_id,stripe_subscription_id,status")
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -62,7 +74,26 @@ serve(async (req) => {
       });
     }
 
-    const origin = req.headers.get("origin") ?? "https://trypost.ai";
+    const subscriptions = await stripe.subscriptions.list({
+      customer: customerId,
+      status: "all",
+      limit: 10,
+    });
+    const existingSubscription = subscriptions.data.find((subscription) =>
+      ["active", "trialing", "past_due", "incomplete", "unpaid", "paused"].includes(subscription.status)
+    );
+
+    const origin = getSafeOrigin(req);
+    if (existingSubscription || (existing?.stripe_subscription_id && existing.status !== "canceled")) {
+      const portalSession = await stripe.billingPortal.sessions.create({
+        customer: customerId,
+        return_url: `${origin}/dashboard/account/plans`,
+      });
+      return new Response(JSON.stringify({ url: portalSession.url, portal: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer: customerId,
