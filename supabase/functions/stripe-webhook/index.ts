@@ -12,6 +12,12 @@ const planForPrice = (priceId: string) => {
   return entries.find(([envName]) => Deno.env.get(envName) === priceId)?.[1] ?? null;
 };
 
+const subscriptionEventTypes = new Set([
+  "customer.subscription.created",
+  "customer.subscription.updated",
+  "customer.subscription.deleted",
+]);
+
 serve(async (req) => {
   try {
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
@@ -30,7 +36,22 @@ serve(async (req) => {
       { auth: { persistSession: false } },
     );
 
-    if (["customer.subscription.created", "customer.subscription.updated", "customer.subscription.deleted"].includes(event.type)) {
+    if (subscriptionEventTypes.has(event.type)) {
+      const { data: processedEvent, error: processedEventError } = await admin
+        .from("stripe_webhook_events")
+        .select("event_id")
+        .eq("event_id", event.id)
+        .maybeSingle();
+      if (processedEventError) {
+        throw new Error(`Failed to check webhook idempotency: ${processedEventError.message}`);
+      }
+      if (processedEvent) {
+        console.log(`[STRIPE-WEBHOOK] Ignored duplicate ${event.id}`);
+        return new Response(JSON.stringify({ received: true, event_id: event.id, duplicate: true }), {
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
       const subscription = event.data.object as Stripe.Subscription;
       const customerId = String(subscription.customer);
       const priceId = subscription.items.data[0]?.price.id ?? "";
@@ -56,22 +77,35 @@ serve(async (req) => {
       const plan = event.type === "customer.subscription.deleted" ? "free" : planForPrice(priceId);
       if (!plan) throw new Error(`Unknown Stripe price ${priceId} for event ${event.id}`);
 
-      const { error: upsertError } = await admin.from("subscriptions").upsert({
-        user_id: userId,
-        stripe_customer_id: customerId,
-        stripe_subscription_id: subscription.id,
-        stripe_price_id: priceId,
-        plan,
-        status: subscription.status,
-        current_period_end: subscription.current_period_end
+      const eventCreatedAt = new Date(event.created * 1000).toISOString();
+      const { data: applied, error: persistError } = await admin.rpc("apply_stripe_subscription_event", {
+        target_user_id: userId,
+        target_customer_id: customerId,
+        target_subscription_id: subscription.id,
+        target_price_id: priceId,
+        target_plan: plan,
+        target_status: subscription.status,
+        target_current_period_end: subscription.current_period_end
           ? new Date(subscription.current_period_end * 1000).toISOString()
           : null,
-        cancel_at_period_end: subscription.cancel_at_period_end,
-        updated_at: new Date().toISOString(),
+        target_cancel_at_period_end: subscription.cancel_at_period_end,
+        target_event_created_at: eventCreatedAt,
       });
-      if (upsertError) throw new Error(`Failed to persist subscription: ${upsertError.message}`);
+      if (persistError) throw new Error(`Failed to persist subscription: ${persistError.message}`);
 
-      console.log(`[STRIPE-WEBHOOK] Persisted ${event.id} for user ${userId}`);
+      const { error: eventRecordError } = await admin.from("stripe_webhook_events").insert({
+        event_id: event.id,
+        event_type: event.type,
+        event_created_at: eventCreatedAt,
+        subscription_id: subscription.id,
+        user_id: userId,
+        processing_result: applied ? "applied" : "stale",
+      });
+      if (eventRecordError && eventRecordError.code !== "23505") {
+        throw new Error(`Failed to record webhook event: ${eventRecordError.message}`);
+      }
+
+      console.log(`[STRIPE-WEBHOOK] ${applied ? "Persisted" : "Ignored stale"} ${event.id} for user ${userId}`);
     }
 
     return new Response(JSON.stringify({ received: true, event_id: event.id }), {
