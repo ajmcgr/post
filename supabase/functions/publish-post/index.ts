@@ -84,20 +84,13 @@ Deno.serve(async (req) => {
     const admin = createAdminClient();
 
     let userId = body.userId ?? '';
-    let connectionClient: SupabaseClient = admin;
 
     if (!isInternalRequest(req, body)) {
-      const supabase = createClient(
-        Deno.env.get('SUPABASE_URL') ?? '',
-        Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-        { global: { headers: { Authorization: authHeader } } }
-      );
-
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      const token = authHeader.replace(/^Bearer\s+/i, '');
+      const { data: { user }, error: userError } = await admin.auth.getUser(token);
       if (userError || !user) throw new Error('Unauthorized');
 
       userId = user.id;
-      connectionClient = supabase;
     }
 
     const { content = '', platforms = [], media = [], draftId, scheduledFor, queue = false, draft = false } = body;
@@ -105,7 +98,7 @@ Deno.serve(async (req) => {
     if (!platforms.length && !draft) throw new Error('Select at least one platform');
     if (!content.trim() && media.length === 0) throw new Error('Empty post');
 
-    const { data: connections, error: connErr } = await connectionClient
+    const { data: connections, error: connErr } = await admin
       .from('oauth_connections')
       .select('*')
       .eq('user_id', userId)

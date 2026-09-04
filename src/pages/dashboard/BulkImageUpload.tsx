@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import MediaPreview from "@/components/dashboard/MediaPreview";
+import BulkPlatformSelector from "@/components/dashboard/BulkPlatformSelector";
 import { Loader2, FolderUp, Plus, X, ImagePlus } from "lucide-react";
 import { toast } from "sonner";
 
@@ -24,6 +25,7 @@ const BulkImageUpload = () => {
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
   const [startTime, setStartTime] = useState("12:00");
   const [perDay, setPerDay] = useState(1);
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [scheduling, setScheduling] = useState(false);
   const folderInput = useRef<HTMLInputElement>(null);
@@ -92,6 +94,7 @@ const BulkImageUpload = () => {
   const applySchedule = async () => {
     if (!user) return;
     if (posts.length === 0) return toast.error("Add at least one post");
+    if (selectedPlatforms.length === 0) return toast.error("Select at least one connected account");
     setScheduling(true);
     try {
       const start = new Date(`${startDate}T${startTime}`);
@@ -104,7 +107,7 @@ const BulkImageUpload = () => {
         return {
           user_id: user.id,
           content: p.caption || bulkCaption,
-          platforms: [],
+          platforms: selectedPlatforms,
           status: "scheduled",
           scheduled_at: when.toISOString(),
           media: p.images,
@@ -248,6 +251,10 @@ const BulkImageUpload = () => {
           </Card>
 
           <Card className="p-5 space-y-3">
+            <BulkPlatformSelector
+              selectedPlatforms={selectedPlatforms}
+              onChange={setSelectedPlatforms}
+            />
             <div>
               <Label>Start Date</Label>
               <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />

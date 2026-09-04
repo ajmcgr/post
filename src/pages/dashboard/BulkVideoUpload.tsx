@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import MediaPreview from "@/components/dashboard/MediaPreview";
+import BulkPlatformSelector from "@/components/dashboard/BulkPlatformSelector";
 import { Loader2, FileVideo, X, Save } from "lucide-react";
 import { toast } from "sonner";
 
@@ -28,6 +29,7 @@ const BulkVideoUpload = () => {
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
   const [startTime, setStartTime] = useState("12:00");
   const [perDay, setPerDay] = useState(1);
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [busy, setBusy] = useState(false);
   const input = useRef<HTMLInputElement>(null);
@@ -85,6 +87,9 @@ const BulkVideoUpload = () => {
   const persist = async (status: "scheduled" | "draft") => {
     if (!user) return;
     if (videos.length === 0) return toast.error("Upload at least one video");
+    if (status === "scheduled" && selectedPlatforms.length === 0) {
+      return toast.error("Select at least one connected account");
+    }
     setBusy(true);
     try {
       const start = new Date(`${startDate}T${startTime}`);
@@ -97,7 +102,7 @@ const BulkVideoUpload = () => {
         return {
           user_id: user.id,
           content: v.caption || bulkCaption,
-          platforms: [],
+          platforms: selectedPlatforms,
           status,
           scheduled_at: status === "scheduled" ? when.toISOString() : null,
           media: [{ media_id: v.media_id, url: v.url, path: v.path, mime: v.mime, kind: "video" }],
@@ -189,6 +194,10 @@ const BulkVideoUpload = () => {
           </Card>
 
           <Card className="p-5 space-y-3">
+            <BulkPlatformSelector
+              selectedPlatforms={selectedPlatforms}
+              onChange={setSelectedPlatforms}
+            />
             <div>
               <Label>Start Date</Label>
               <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
