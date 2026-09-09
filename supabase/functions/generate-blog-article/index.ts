@@ -68,7 +68,45 @@ Rules:
       model: "gpt-5-mini",
       input: prompt,
       max_output_tokens: 8192,
-      text: { format: { type: "json_object" } },
+      text: {
+        format: {
+          type: "json_schema",
+          name: "blog_article",
+          strict: true,
+          schema: {
+            type: "object",
+            additionalProperties: false,
+            required: ["slug", "title", "excerpt", "category", "tags", "content", "faqs"],
+            properties: {
+              slug: { type: "string", minLength: 3, maxLength: 100 },
+              title: { type: "string", minLength: 1, maxLength: 90 },
+              excerpt: { type: "string", minLength: 1, maxLength: 220 },
+              category: { type: "string", minLength: 1, maxLength: 40 },
+              tags: {
+                type: "array",
+                minItems: 3,
+                maxItems: 6,
+                items: { type: "string", minLength: 1, maxLength: 32 },
+              },
+              content: { type: "string", minLength: 1, maxLength: 16000 },
+              faqs: {
+                type: "array",
+                minItems: 3,
+                maxItems: 3,
+                items: {
+                  type: "object",
+                  additionalProperties: false,
+                  required: ["q", "a"],
+                  properties: {
+                    q: { type: "string", minLength: 1, maxLength: 180 },
+                    a: { type: "string", minLength: 1, maxLength: 500 },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     }),
   });
 
