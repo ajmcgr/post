@@ -5,15 +5,27 @@ on:
     - cron: "30 6 * * *"
   workflow_dispatch:
 
+concurrency:
+  group: generate-blog-images
+  cancel-in-progress: false
+
 jobs:
   generate-blog-images:
     runs-on: ubuntu-latest
     steps:
       - name: Generate missing blog artwork
         env:
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          # This is Supabase's public anonymous key, also used by the browser.
+          # A GitHub secret may override it, but scheduled runs must not depend
+          # on an optional repository secret being configured.
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFmcW93aGV0cnhyaXRveWp6emN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI4NTMzOTEsImV4cCI6MjA3ODQyOTM5MX0.KBrTfwq8vDaPlHE81YgmKkSHXf6GX9JDFQWFRc4WQCU' }}
         run: |
-          curl --fail --show-error --silent \
+          curl --fail-with-body --show-error --silent \
+            --retry 3 \
+            --retry-all-errors \
+            --retry-delay 5 \
+            --connect-timeout 15 \
+            --max-time 300 \
             --request POST \
             --header "Content-Type: application/json" \
             --header "apikey: $SUPABASE_ANON_KEY" \
