@@ -1,0 +1,43 @@
+name: Publish blog post
+
+on:
+  schedule:
+    - cron: "0 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-blog-post
+  cancel-in-progress: false
+
+jobs:
+  publish-blog-post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Generate one reviewed-format blog post
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: node scripts/generate-blog-post.mjs
+
+      - name: Commit and publish the article
+        run: |
+          if git diff --quiet -- src/data/generatedBlogPosts.json; then
+            echo "No article was generated."
+            exit 0
+          fi
+
+          git config user.name "post-blog-bot"
+          git config user.email "bot@trypost.ai"
+          git add src/data/generatedBlogPosts.json
+          git commit -m "Publish weekly blog article"
+          git push origin HEAD:main

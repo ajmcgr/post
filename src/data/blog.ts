@@ -1,3 +1,5 @@
+import generatedBlogPosts from "./generatedBlogPosts.json";
+
 export interface BlogFaq {
   q: string;
   a: string;
@@ -29,7 +31,7 @@ export function formatBlogDate(iso: string) {
   });
 }
 
-export const blogPosts: BlogPost[] = [
+const editorialBlogPosts: BlogPost[] = [
   {
     slug: "best-time-to-post-on-instagram-2026",
     title: "The Best Time to Post on Instagram in 2026",
@@ -849,4 +851,9 @@ Don't pick a scheduler that only works solo — you'll outgrow it in six months.
       },
     ],
   },
+];
+
+export const blogPosts: BlogPost[] = [
+  ...(generatedBlogPosts as BlogPost[]),
+  ...editorialBlogPosts,
 ];
