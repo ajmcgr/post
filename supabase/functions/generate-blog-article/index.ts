@@ -58,11 +58,13 @@ Rules:
   "faqs": [{"q":"Question?","a":"Helpful answer"},{"q":"Question?","a":"Helpful answer"},{"q":"Question?","a":"Helpful answer"}]
 }`;
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`,
-    {
+  const requestGeneration = (model: string) =>
+    fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey,
+      },
       body: JSON.stringify({
         contents: [{ role: "user", parts: [{ text: prompt }] }],
         generationConfig: {
@@ -71,8 +73,12 @@ Rules:
           maxOutputTokens: 8192,
         },
       }),
-    },
-  );
+    });
+
+  let response = await requestGeneration("gemini-2.0-flash");
+  if (response.status === 404) {
+    response = await requestGeneration("gemini-2.5-flash");
+  }
 
   if (!response.ok) throw new Error(`Gemini request failed with status ${response.status}`);
   const data = await response.json();
