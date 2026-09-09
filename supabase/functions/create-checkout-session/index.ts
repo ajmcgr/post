@@ -10,8 +10,6 @@ const corsHeaders = {
 const priceEnv: Record<string, string> = {
   "pro:monthly": "STRIPE_PRO_MONTHLY_PRICE_ID",
   "pro:yearly": "STRIPE_PRO_YEARLY_PRICE_ID",
-  "business:monthly": "STRIPE_BUSINESS_MONTHLY_PRICE_ID",
-  "business:yearly": "STRIPE_BUSINESS_YEARLY_PRICE_ID",
 };
 
 const allowedOrigins = new Set([
@@ -46,6 +44,7 @@ serve(async (req) => {
     if (userError || !user?.email) throw new Error("Authentication required");
 
     const { plan, billing } = await req.json();
+    if (plan !== "pro") throw new Error("This plan is not available for new subscriptions");
     const envName = priceEnv[`${plan}:${billing}`];
     const priceId = envName ? Deno.env.get(envName) : null;
     if (!priceId) throw new Error("This plan is not configured for checkout");

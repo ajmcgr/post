@@ -209,7 +209,7 @@ If any of those takes more than a click, you will stop doing it, and your cross-
 The difference between scheduling five posts and fifty is whether the tool has bulk image and video upload. If you produce short-form video at volume, uploading 30 clips at once and assigning captions in a grid is the single biggest time saver available. Combine it with the [two-hour batching workflow](/blog/batching-content-in-two-hours-a-week).
 
 ## 5. Check failure handling
-Ask what happens when a token expires or a platform returns a rate-limit error. The right answers: automatic retry, an email notification, and a visible failed-posts list. The wrong answer: silence. Read [auto-publishing safely](/blog/auto-publishing-safely) for the full list of failure modes worth testing.
+Ask what happens when a token expires or a platform returns a rate-limit error. The right answers: an email notification and a visible failed-posts list. The wrong answer: silence. Read [auto-publishing safely](/blog/auto-publishing-safely) for the full list of failure modes worth testing.
 
 ## 6. Team workflow, even if you are solo today
 If there is any chance a VA, editor or client joins in the next year, check for workspaces, role permissions and an approval state. Migrating schedulers later is far more painful than picking one that scales. See [solo creator vs team scheduling](/blog/solo-creator-vs-team-scheduling).
@@ -218,7 +218,7 @@ If there is any chance a VA, editor or client joins in the next year, check for 
 Can you export your scheduled posts as CSV? Can you disconnect and reconnect accounts without losing history? A tool that cannot export is a tool you cannot leave.
 
 ## A fair summary
-Buffer is a good product and for a two-channel solo creator it is often enough. The reasons to move are volume, video, multi-brand work, and per-channel cost. If any two of those apply to you, run the checklist above against your shortlist — and if you want to see how Post handles them, the [free plan](/signup) covers two platforms with no card required.
+Buffer is a good product and for a two-channel solo creator it is often enough. The reasons to move are volume, video, and per-channel cost. If any two of those apply to you, run the checklist above against your shortlist — and if you want to see how Post handles them, the [free plan](/signup) covers two platforms with no card required.
 `,
     faqs: [
       {
@@ -781,7 +781,7 @@ Every Sunday, open your scheduler and check three things: platform connection st
 Do it at the start of your [batching session](/blog/batching-content-in-two-hours-a-week) so it never becomes a separate task you skip.
 
 ## Auto-retry is not optional
-Transient API errors are common — a network blip, a five-second platform outage, a temporary rate limit. A scheduler that fails permanently on the first error will drop posts every month. Retry with backoff, then notify. Post retries automatically and emails you if a post still cannot publish.
+Transient API errors are common — a network blip, a five-second platform outage, a temporary rate limit. A scheduler that fails permanently on the first error will drop posts every month. A reliable workflow makes failures visible and notifies you so you can review and republish affected posts.
 
 ## The paranoid setup
 For high-stakes accounts (client work, launches, brand-critical posts), enable email or SMS alerts on publish failures. Silent failures are the real risk — not the failures themselves.
@@ -833,7 +833,7 @@ The first thing that breaks is the voice. Write a one-page voice guide — five 
 - A weekly review of failed posts and connection status — see [auto-publishing safely](/blog/auto-publishing-safely).
 
 ## Agency and client work
-Client accounts add two requirements solo tooling never needs: an approval state the client can act on without logging into your systems, and hard separation between brands so nothing is ever posted to the wrong account. Workspace switching with per-workspace connections solves both — check the [Business plan](/pricing) if you run more than one brand.
+Client accounts add two requirements solo tooling never needs: an approval state the client can act on without logging into your systems, and hard separation between brands so nothing is ever posted to the wrong account. Confirm that the scheduler you choose supports the workflow your client work requires before committing content to it.
 
 ## The tool should scale with you
 Don't pick a scheduler that only works solo — you'll outgrow it in six months. Pick one where "invite a teammate" is a single button, and the workflow you built alone doesn't have to be rebuilt for two. That is also the top reason people go looking for a [Buffer alternative](/blog/buffer-alternative-for-creators).

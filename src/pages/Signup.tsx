@@ -21,7 +21,8 @@ const Signup = () => {
   const query = new URLSearchParams(location.search);
   const selectedPlan = query.get("plan");
   const billing = query.get("billing");
-  const destination = selectedPlan === "pro" || selectedPlan === "business"
+  const isProTrial = selectedPlan === "pro";
+  const destination = selectedPlan === "pro"
     ? `/dashboard/account/plans?plan=${selectedPlan}&billing=${billing === "yearly" ? "yearly" : "monthly"}`
     : "/dashboard";
 
@@ -34,6 +35,7 @@ const Signup = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    trackEvent("signup_started", { method: "email", selected_plan: selectedPlan ?? "free" });
     const { error } = await signUp(email, password, fullName);
     if (!error) {
       trackEvent("signup_completed", { method: "email", selected_plan: selectedPlan ?? "free" });
@@ -55,9 +57,13 @@ const Signup = () => {
       <div className="flex items-center justify-center p-6 pt-16">
         <div className="w-full max-w-md">
           <Card className="p-8 rounded-3xl border-2">
-            <h1 className="text-3xl font-bold mb-2 text-center">Get started free</h1>
+            <h1 className="text-3xl font-bold mb-2 text-center">
+              {isProTrial ? "Start your Pro trial" : "Get started free"}
+            </h1>
             <p className="text-muted-foreground text-center mb-8">
-              Create your account in seconds
+              {isProTrial
+                ? "Create your account, then start your 14-day Pro trial securely."
+                : "Create your account in seconds"}
             </p>
 
             <Button
@@ -139,7 +145,7 @@ const Signup = () => {
                 />
               </div>
               <Button className="w-full rounded-xl" size="lg" type="submit" disabled={loading}>
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create Account"}
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : isProTrial ? "Continue to Pro trial" : "Create Account"}
               </Button>
             </form>
 

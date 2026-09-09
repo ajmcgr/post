@@ -41,6 +41,15 @@ const Home = () => {
   const hasConnections = connectionCount > 0;
   const hasPosts = postCount > 0;
 
+  useEffect(() => {
+    if (!loading) {
+      trackEvent("onboarding_viewed", {
+        has_connections: hasConnections,
+        has_posts: hasPosts,
+      });
+    }
+  }, [hasConnections, hasPosts, loading]);
+
   const postTypes = [
     {
       title: "Text Post",

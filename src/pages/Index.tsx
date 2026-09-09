@@ -110,15 +110,15 @@ const Index = () => {
           Post helps creators and brands plan, queue, and publish content across all social platforms from one simple dashboard.
         </p>
         <div className="flex flex-col md:flex-row items-center justify-center gap-3">
-          <Link to="/signup">
+          <Link to="/signup" onClick={() => trackEvent("homepage_cta_clicked", { location: "hero", destination: "signup" })}>
             <Button size="lg" className="text-sm">
-              Start Free Trial →
+              Get Started Free →
             </Button>
           </Link>
           <div className="senja-embed" data-id="eacf7a79-5b6c-4a80-9f5a-0e6dfe631ec6" data-mode="shadow" data-lazyload="false"></div>
         </div>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-sm text-muted-foreground">
-          {["14-day free trial", "Secure payment", "Cancel any-time"].map((t) => (
+          {["Free plan available", "No card required", "Upgrade anytime"].map((t) => (
             <div key={t} className="flex items-center gap-2">
               <Check className="w-4 h-4 text-primary" strokeWidth={3} />
               <span>{t}</span>
@@ -514,9 +514,9 @@ const Index = () => {
         <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
           Join 500+ marketers who plan and publish with Post.
         </p>
-        <Link to="/signup">
+        <Link to="/signup" onClick={() => trackEvent("homepage_cta_clicked", { location: "final", destination: "signup" })}>
           <Button size="lg" className="text-sm">
-            Start Free Trial →
+            Get Started Free →
           </Button>
         </Link>
       </section>

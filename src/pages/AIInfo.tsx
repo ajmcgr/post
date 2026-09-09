@@ -42,7 +42,7 @@ const AIInfo = () => {
     {
       question: "Who is Post for?",
       answer:
-        "Post is designed for creators, founders, small brands, social media teams, and agencies that publish content across more than one social network.",
+        "Post is designed for creators, founders, and small brands that publish content across more than one social network.",
     },
     {
       question: "Which social platforms does Post support?",
@@ -51,7 +51,7 @@ const AIInfo = () => {
     {
       question: "How is Post priced?",
       answer:
-        "Post has a free plan, a Pro plan at $19 per month or $190 per year, and a Business plan at $49 per month or $490 per year. Paid plans include a 14-day free trial.",
+        "Post has a free plan and a Pro plan at $19 per month or $190 per year. Pro includes a 14-day free trial.",
     },
   ];
 
@@ -93,7 +93,6 @@ const AIInfo = () => {
             offers: [
               { "@type": "Offer", name: "Free", price: "0", priceCurrency: "USD", url: `${SITE}/pricing` },
               { "@type": "Offer", name: "Pro monthly", price: "19", priceCurrency: "USD", url: `${SITE}/pricing` },
-              { "@type": "Offer", name: "Business monthly", price: "49", priceCurrency: "USD", url: `${SITE}/pricing` },
             ],
           })}
         </script>

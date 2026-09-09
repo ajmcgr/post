@@ -5,7 +5,6 @@ import {
   Clock,
   CheckCircle2,
   FileCheck,
-  Users,
   Settings,
   FileStack,
   Link2,
@@ -35,7 +34,6 @@ const mainItems = [
   { title: "Scheduled", url: "/dashboard/scheduled", icon: Clock },
   { title: "Posted", url: "/dashboard/posted", icon: CheckCircle2 },
   { title: "Drafts", url: "/dashboard/drafts", icon: FileCheck },
-  { title: "Teams", url: "/dashboard/teams", icon: Users },
   { title: "Social Platforms", url: "/dashboard/connections", icon: Link2 },
 ];
 

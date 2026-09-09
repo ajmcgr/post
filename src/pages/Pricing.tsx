@@ -5,7 +5,7 @@ import { Check } from "lucide-react";
 import { Link } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { productPlans, type BillingInterval } from "@/data/plans";
+import { purchasablePlans, type BillingInterval } from "@/data/plans";
 import { trackEvent } from "@/lib/analytics";
 
 const Pricing = () => {
@@ -21,7 +21,7 @@ const Pricing = () => {
           Simple, transparent pricing
         </h1>
         <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-          Choose the plan that fits your needs. All plans include a 14-day free trial.
+          Choose the plan that fits your needs. Paid plans include a 14-day free trial.
         </p>
 
         {/* Billing toggle */}
@@ -46,8 +46,8 @@ const Pricing = () => {
         </div>
 
         {/* Pricing Cards */}
-        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {productPlans.map((plan) => {
+        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          {purchasablePlans.map((plan) => {
             const isFree = plan.monthly === 0;
             const amount = billing === "monthly" ? plan.monthly : plan.yearly;
             return (

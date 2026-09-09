@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { Home, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,7 +15,6 @@ import { supabase } from "@/lib/supabase";
 import { trackEvent } from "@/lib/analytics";
 
 const Workspaces = () => {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { plan } = useSubscription();
@@ -25,14 +24,12 @@ const Workspaces = () => {
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
-    if (searchParams.get("new") === "1") setShowCreateDialog(true);
-  }, [searchParams]);
+    if (searchParams.get("new") === "1" && plan === "business") setShowCreateDialog(true);
+  }, [plan, searchParams]);
 
   const handleAddWorkspace = () => {
     if (plan !== "business") {
-      trackEvent("upgrade_prompt_viewed", { source: "workspaces_page", plan });
-      toast.error("Upgrade to Business to create multiple workspaces");
-      navigate("/dashboard/account/plans?plan=business");
+      toast.error("Multiple workspaces are not available for new subscriptions.");
       return;
     }
     setShowCreateDialog(true);

@@ -4,7 +4,7 @@ import { Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { productPlans, type BillingInterval, type PlanId } from "@/data/plans";
+import { productPlans, purchasablePlans, type BillingInterval, type PlanId } from "@/data/plans";
 import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/lib/supabase";
 import { trackEvent } from "@/lib/analytics";
@@ -15,16 +15,29 @@ const Plans = () => {
   const [billing, setBilling] = useState<BillingInterval>(initialBilling);
   const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
   const { plan: currentPlan, status, currentPeriodEnd, cancelAtPeriodEnd, refresh } = useSubscription();
+  const visiblePlans = currentPlan === "business"
+    ? productPlans
+    : purchasablePlans;
 
   useEffect(() => {
     if (searchParams.get("checkout") === "success") {
-      toast.success("Subscription started. Your plan will update in a moment.");
-      trackEvent("checkout_completed");
+      toast.success("Checkout completed. Your plan will update in a moment.");
+      trackEvent("checkout_returned");
       const timer = window.setTimeout(refresh, 1500);
       return () => window.clearTimeout(timer);
     }
     if (searchParams.get("checkout") === "cancelled") trackEvent("checkout_cancelled");
   }, [refresh, searchParams]);
+
+  useEffect(() => {
+    if (
+      searchParams.get("checkout") === "success" &&
+      currentPlan !== "free" &&
+      ["active", "trialing"].includes(status)
+    ) {
+      trackEvent("subscription_confirmed", { plan: currentPlan, status });
+    }
+  }, [currentPlan, searchParams, status]);
 
   const startCheckout = async (plan: PlanId) => {
     setLoadingPlan(plan);
@@ -80,7 +93,7 @@ const Plans = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-        {productPlans.map((plan) => {
+        {visiblePlans.map((plan) => {
           const isCurrent = plan.id === currentPlan;
           const amount = billing === "monthly" ? plan.monthly : plan.yearly;
           const isSelected = searchParams.get("plan") === plan.id;

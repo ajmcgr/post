@@ -10,6 +10,7 @@ export interface ProductPlan {
   features: string[];
   cta: string;
   highlighted: boolean;
+  availableForPurchase: boolean;
   socialAccountLimit: number | null;
   scheduledPostLimit: number | null;
 }
@@ -31,6 +32,7 @@ export const productPlans: ProductPlan[] = [
     ],
     cta: "Get Started",
     highlighted: false,
+    availableForPurchase: true,
     socialAccountLimit: 2,
     scheduledPostLimit: 10,
   },
@@ -46,13 +48,12 @@ export const productPlans: ProductPlan[] = [
       "Single and bulk image/video publishing",
       "Calendar, queue and posting time slots",
       "Draft, scheduled and published post views",
-      "Automatic retry for failed posts",
-      "Uploads up to 1GB",
       "Failure email notifications",
       "Priority support",
     ],
     cta: "Start Free Trial",
     highlighted: true,
+    availableForPurchase: true,
     socialAccountLimit: 7,
     scheduledPostLimit: null,
   },
@@ -73,6 +74,7 @@ export const productPlans: ProductPlan[] = [
     ],
     cta: "Start Free Trial",
     highlighted: false,
+    availableForPurchase: false,
     socialAccountLimit: null,
     scheduledPostLimit: null,
   },
@@ -80,3 +82,5 @@ export const productPlans: ProductPlan[] = [
 
 export const getPlan = (planId: PlanId) =>
   productPlans.find((plan) => plan.id === planId) ?? productPlans[0];
+
+export const purchasablePlans = productPlans.filter((plan) => plan.availableForPurchase);

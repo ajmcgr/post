@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
@@ -149,6 +149,18 @@ const Composer = () => {
 
   const removeMedia = (id: string) => setMedia((m) => m.filter((x) => x.media_id !== id));
 
+  const trackActivationIfFirstPost = async () => {
+    if (!user) return;
+    const { count, error } = await supabase
+      .from('posts')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id);
+
+    if (!error && count === 1) {
+      trackEvent('activation_completed', { composer: 'text', platform_count: selectedPlatforms.length });
+    }
+  };
+
   const nextQueueSlot = (): Date | null => {
     if (!queueSlots.length) return null;
     const now = new Date();
@@ -207,6 +219,7 @@ const Composer = () => {
         });
         if (error) throw error;
         trackEvent('post_scheduled', { composer: 'text', platform_count: selectedPlatforms.length, queue: scheduleMode === 'queue' });
+        void trackActivationIfFirstPost();
         toast.success(`Scheduled for ${scheduledAt.toLocaleString()}`);
         navigate('/dashboard/scheduled');
         return;
@@ -225,11 +238,13 @@ const Composer = () => {
       const failed = results.filter((r: any) => !r.success).length;
       if (failed === 0) {
         trackEvent('post_published', { composer: 'text', platform_count: successful });
+        void trackActivationIfFirstPost();
         navigate('/dashboard/publishing', {
           state: { postData: { content, platforms: selectedPlatforms }, successful, total: results.length },
         });
       } else if (successful > 0) {
         trackEvent('post_partially_published', { composer: 'text', successful, failed });
+        void trackActivationIfFirstPost();
         toast.warning(`Published to ${successful}, ${failed} failed.`);
         setTimeout(() => navigate('/dashboard/posts'), 2000);
       } else {
@@ -419,11 +434,19 @@ const Composer = () => {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label className="text-sm text-muted-foreground">Media (images / video)</Label>
-              <Button variant="outline" size="sm" className="gap-2" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-                {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}
-                {uploading ? 'Uploading…' : 'Add media'}
-              </Button>
-              <input ref={fileInputRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={(e) => handleFiles(e.target.files)} />
+              {plan === 'free' ? (
+                <Button asChild variant="outline" size="sm">
+                  <Link to="/dashboard/account/plans?plan=pro">Media on Pro</Link>
+                </Button>
+              ) : (
+                <>
+                  <Button variant="outline" size="sm" className="gap-2" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+                    {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}
+                    {uploading ? 'Uploading…' : 'Add media'}
+                  </Button>
+                  <input ref={fileInputRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={(e) => handleFiles(e.target.files)} />
+                </>
+              )}
             </div>
             {media.length > 0 && (
               <div className="flex flex-wrap gap-3">

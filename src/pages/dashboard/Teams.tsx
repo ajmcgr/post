@@ -23,13 +23,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
 import { useSubscription } from "@/hooks/useSubscription";
 import { trackEvent } from "@/lib/analytics";
 
 const Teams = () => {
   const { currentWorkspace, members, invitations, userRole, canManageWorkspace, refreshWorkspace } = useWorkspace();
-  const navigate = useNavigate();
   const { plan } = useSubscription();
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<"member" | "admin">("member");
@@ -296,17 +294,14 @@ const Teams = () => {
       <AlertDialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Upgrade to Business Plan</AlertDialogTitle>
+            <AlertDialogTitle>Team collaboration is not currently available</AlertDialogTitle>
             <AlertDialogDescription>
-              Team collaboration is only available on the Business plan. 
-              Upgrade now to invite team members and collaborate on your workspace.
+              Team collaboration is not available for new subscriptions at this time.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => navigate("/dashboard/account/plans")}>
-              View Plans
-            </AlertDialogAction>
+            <AlertDialogAction>Close</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

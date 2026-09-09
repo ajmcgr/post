@@ -19,7 +19,7 @@ const Facebook = () => {
         </div>
         
         <p className="text-xl text-muted-foreground mb-12">
-          Schedule Facebook posts and stories. Manage both personal profiles and business pages from one dashboard.
+          Schedule Facebook posts and stories from one dashboard.
         </p>
 
         <div className="grid md:grid-cols-2 gap-8 mb-16">
@@ -27,7 +27,7 @@ const Facebook = () => {
             <Calendar className="w-10 h-10 text-primary mb-4" />
             <h3 className="text-xl font-semibold mb-2">Page Management</h3>
             <p className="text-muted-foreground">
-              Schedule posts to multiple Facebook pages and manage all your business accounts in one place.
+              Schedule your Facebook posts alongside your other social channels in one place.
             </p>
           </div>
           <div className="p-6 rounded-2xl border-2 border-border bg-card">

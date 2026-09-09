@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
@@ -61,7 +61,7 @@ interface MediaComposerProps {
 
 const MediaComposer = ({ kind, title }: MediaComposerProps) => {
   const { user, loading: authLoading } = useAuth();
-  const { plan } = useSubscription();
+  const { plan, loading: subscriptionLoading } = useSubscription();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [content, setContent] = useState('');
@@ -145,6 +145,18 @@ const MediaComposer = ({ kind, title }: MediaComposerProps) => {
     setMedia((current) => current.filter((_, itemIndex) => itemIndex !== index));
   };
 
+  const trackActivationIfFirstPost = async () => {
+    if (!user) return;
+    const { count, error } = await supabase
+      .from('posts')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id);
+
+    if (!error && count === 1) {
+      trackEvent('activation_completed', { composer: kind, platform_count: selectedPlatforms.length });
+    }
+  };
+
   const submitPost = async () => {
     if (!isReady) return toast.error(`Please add content or ${kind}s`);
     if (selectedPlatforms.length === 0) return toast.error('Please select at least one account');
@@ -181,6 +193,7 @@ const MediaComposer = ({ kind, title }: MediaComposerProps) => {
 
       if (scheduledFor) {
         trackEvent('post_scheduled', { composer: kind, platform_count: selectedPlatforms.length, queue });
+        void trackActivationIfFirstPost();
         toast.success(`Scheduled for ${new Date(scheduledFor).toLocaleString()}`);
         navigate(queue ? '/dashboard/queue' : '/dashboard/scheduled');
         return;
@@ -192,11 +205,13 @@ const MediaComposer = ({ kind, title }: MediaComposerProps) => {
 
       if (!failed) {
         trackEvent('post_published', { composer: kind, platform_count: successful });
+        void trackActivationIfFirstPost();
         navigate('/dashboard/publishing', {
           state: { postData: { content, platforms: selectedPlatforms, media: compactMedia(media) }, successful, total: results.length },
         });
       } else if (successful > 0) {
         trackEvent('post_partially_published', { composer: kind, successful, failed });
+        void trackActivationIfFirstPost();
         toast.warning(`Published to ${successful}, ${failed} failed.`);
         navigate('/dashboard/posts');
       } else {
@@ -226,10 +241,26 @@ const MediaComposer = ({ kind, title }: MediaComposerProps) => {
     }
   };
 
-  if (authLoading || loading) {
+  if (authLoading || loading || subscriptionLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (plan === 'free') {
+    return (
+      <div className="container mx-auto px-6 py-8">
+        <Card className="mx-auto max-w-xl p-8 text-center">
+          <h1 className="text-2xl font-bold">{title} is available on Pro</h1>
+          <p className="mt-3 text-muted-foreground">
+            Upgrade to upload images and videos, publish media posts, and use bulk workflows.
+          </p>
+          <Button asChild className="mt-6">
+            <Link to="/dashboard/account/plans?plan=pro">View Pro plan</Link>
+          </Button>
+        </Card>
       </div>
     );
   }

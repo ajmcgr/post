@@ -29,6 +29,19 @@ function assertFileSize(kind: 'image' | 'video', size: number) {
   if (size > limit) throw new Error(`File too large (max ${Math.round(limit / 1024 / 1024)}MB)`);
 }
 
+async function assertMediaPublishingAccess(admin: ReturnType<typeof createAdminClient>, userId: string) {
+  const { data, error } = await admin
+    .from('subscriptions')
+    .select('plan,status')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (error) throw new Error(`Unable to verify plan access: ${error.message}`);
+  if (!data || !['pro', 'business'].includes(data.plan) || !['active', 'trialing', 'past_due'].includes(data.status)) {
+    throw new Error('Image and video publishing requires the Pro plan.');
+  }
+}
+
 function getExtension(fileName: string | undefined, kind: 'image' | 'video') {
   return (fileName?.split('.').pop() || (kind === 'image' ? 'jpg' : 'mp4')).toLowerCase();
 }
@@ -62,6 +75,7 @@ Deno.serve(async (req) => {
     if (userError || !user) throw new Error('Unauthorized');
 
     const admin = createAdminClient();
+    await assertMediaPublishingAccess(admin, user.id);
     const contentType = req.headers.get('content-type') ?? '';
 
     if (contentType.includes('application/json')) {

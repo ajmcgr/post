@@ -11,6 +11,8 @@ import MediaPreview from "@/components/dashboard/MediaPreview";
 import BulkPlatformSelector from "@/components/dashboard/BulkPlatformSelector";
 import { Loader2, FolderUp, Plus, X, ImagePlus } from "lucide-react";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
+import { useSubscription } from "@/hooks/useSubscription";
 
 interface BulkPost {
   id: string;
@@ -20,6 +22,7 @@ interface BulkPost {
 
 const BulkImageUpload = () => {
   const { user } = useAuth();
+  const { plan, loading: subscriptionLoading } = useSubscription();
   const [posts, setPosts] = useState<BulkPost[]>([]);
   const [bulkCaption, setBulkCaption] = useState("");
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
@@ -29,6 +32,19 @@ const BulkImageUpload = () => {
   const [uploading, setUploading] = useState(false);
   const [scheduling, setScheduling] = useState(false);
   const folderInput = useRef<HTMLInputElement>(null);
+
+  if (subscriptionLoading) return null;
+  if (plan === "free") {
+    return (
+      <div className="container mx-auto px-6 py-8">
+        <Card className="mx-auto max-w-xl p-8 text-center">
+          <h1 className="text-3xl font-bold">Bulk image publishing is available on Pro</h1>
+          <p className="mt-3 text-muted-foreground">Upgrade to create and schedule image posts in batches.</p>
+          <Button asChild className="mt-6"><Link to="/dashboard/account/plans?plan=pro">View Pro plan</Link></Button>
+        </Card>
+      </div>
+    );
+  }
 
   const upload = async (file: File) => {
     const { data: { session } } = await supabase.auth.getSession();

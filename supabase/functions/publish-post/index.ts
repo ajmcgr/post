@@ -59,6 +59,19 @@ function createAdminClient() {
   );
 }
 
+async function assertMediaPublishingAccess(admin: SupabaseClient, userId: string) {
+  const { data, error } = await admin
+    .from('subscriptions')
+    .select('plan,status')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (error) throw new Error(`Unable to verify plan access: ${error.message}`);
+  if (!data || !['pro', 'business'].includes(data.plan) || !['active', 'trialing', 'past_due'].includes(data.status)) {
+    throw new Error('Image and video publishing requires the Pro plan.');
+  }
+}
+
 function isInternalRequest(req: Request, body: PublishRequest) {
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   const schedulerSecret = Deno.env.get('SCHEDULED_WORKER_SECRET') ?? Deno.env.get('CRON_SECRET');
@@ -97,6 +110,7 @@ Deno.serve(async (req) => {
 
     if (!platforms.length && !draft) throw new Error('Select at least one platform');
     if (!content.trim() && media.length === 0) throw new Error('Empty post');
+    if (media.length > 0) await assertMediaPublishingAccess(admin, userId);
 
     const { data: connections, error: connErr } = await admin
       .from('oauth_connections')
