@@ -58,41 +58,43 @@ Rules:
   "faqs": [{"q":"Question?","a":"Helpful answer"},{"q":"Question?","a":"Helpful answer"},{"q":"Question?","a":"Helpful answer"}]
 }`;
 
-  const requestGeneration = (model: string) =>
-    fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": apiKey,
-      },
-      body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: {
-          responseMimeType: "application/json",
-          temperature: 0.7,
-          maxOutputTokens: 8192,
-        },
-      }),
-    });
-
-  let response = await requestGeneration("gemini-2.5-flash");
-  if (response.status === 404) {
-    response = await requestGeneration("gemini-2.5-flash-lite");
-  }
-  if (response.status === 404) response = await requestGeneration("gemini-2.0-flash");
+  const response = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "gpt-5-mini",
+      input: prompt,
+      max_output_tokens: 8192,
+      text: { format: { type: "json_object" } },
+    }),
+  });
 
   if (!response.ok) {
     const details = await response.text();
-    throw new Error(`Gemini request failed with status ${response.status}: ${details.slice(0, 500)}`);
+    throw new Error(`OpenAI request failed with status ${response.status}: ${details.slice(0, 500)}`);
   }
-  const data = await response.json();
-  const text = data?.candidates?.[0]?.content?.parts?.map((part: { text?: string }) => part.text ?? "").join("").trim();
-  if (!text) throw new Error("Gemini returned no article content");
+
+  const data = await response.json() as {
+    output?: Array<{ content?: Array<{ type?: string; text?: string }> }>;
+    output_text?: string;
+  };
+  const text = typeof data.output_text === "string"
+    ? data.output_text.trim()
+    : data.output
+      ?.flatMap((item) => item.content ?? [])
+      .filter((part) => part.type === "output_text")
+      .map((part) => part.text ?? "")
+      .join("")
+      .trim();
+  if (!text) throw new Error("OpenAI returned no article content");
 
   try {
     return JSON.parse(text);
   } catch {
-    throw new Error("Gemini returned invalid JSON");
+    throw new Error("OpenAI returned invalid JSON");
   }
 }
 
@@ -106,8 +108,8 @@ Deno.serve(async (req) => {
     return json({ error: "Unauthorized" }, 401);
   }
 
-  const apiKey = Deno.env.get("GEMINI_API_KEY");
-  if (!apiKey) return json({ error: "Missing GEMINI_API_KEY" }, 500);
+  const apiKey = Deno.env.get("CHATGPT_API_KEY");
+  if (!apiKey) return json({ error: "Missing CHATGPT_API_KEY" }, 500);
 
   try {
     const body = await req.json();
