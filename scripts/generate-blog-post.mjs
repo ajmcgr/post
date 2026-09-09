@@ -3,18 +3,9 @@ import { resolve } from "node:path";
 
 const generatedPostsPath = resolve("src/data/generatedBlogPosts.json");
 const editorialPostsPath = resolve("src/data/blog.ts");
-const geminiApiKey = process.env.GEMINI_API_KEY;
-
-const topics = [
-  "How creators can build a two-week social media content backlog",
-  "How to adapt one campaign idea across LinkedIn, Instagram, X, Threads, TikTok, and YouTube",
-  "A practical weekly review for scheduled social posts and failed publishes",
-  "How small teams can create a content approval process without slowing down",
-  "How to use a social media content calendar without filling it with low-value posts",
-  "How creators can repurpose a long-form video into a week of platform-native social posts",
-  "A practical system for planning content around launches, events, and evergreen posts",
-  "How to audit a social media scheduling workflow before it becomes unmanageable",
-];
+const supabaseUrl = "https://qfqowhetrxritoyjzzcz.supabase.co";
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+const publisherSecret = process.env.BLOG_PUBLISHER_SECRET;
 
 const isoDate = new Date().toISOString().slice(0, 10);
 
@@ -95,52 +86,26 @@ function validateArticle(candidate, existingSlugs) {
 }
 
 async function generateArticle(existingTitles) {
-  if (!geminiApiKey) fail("Missing GEMINI_API_KEY. Add it as a GitHub Actions secret before running this workflow.");
+  if (!supabaseAnonKey || !publisherSecret) {
+    fail("Missing SUPABASE_ANON_KEY or BLOG_PUBLISHER_SECRET for the blog publisher.");
+  }
 
-  const topic = topics[Math.floor(Date.now() / 86_400_000) % topics.length];
-  const prompt = `Create one original, genuinely useful blog article for Post (trypost.ai), a social media planning, scheduling, and publishing app for creators, founders, and small teams.
-
-Write about this topic: ${topic}
-
-Rules:
-- Write practical, direct advice; do not invent product capabilities, customer counts, statistics, platform policy changes, or guarantees.
-- Do not claim Post supports a particular integration unless the article can make the advice useful without that claim.
-- Use Markdown-style ## headings, short paragraphs, and actionable steps.
-- Include a concise, non-pushy mention of Post only where relevant.
-- Use only internal links from this set when helpful: /pricing, /tools/content-planner, /tools/caption-generator, /blog.
-- Avoid duplicating or closely paraphrasing these existing articles: ${existingTitles.join(" | ")}.
-- Return JSON only, with this exact shape:
-{
-  "slug": "lowercase-hyphenated-slug-with-at-least-three-words",
-  "title": "SEO-friendly title under 90 characters",
-  "excerpt": "Summary under 220 characters",
-  "category": "One concise category",
-  "tags": ["three", "to", "six", "lowercase", "tags"],
-  "content": "700-1500 word article using ## headings",
-  "faqs": [{"q":"Question?","a":"Helpful answer"},{"q":"Question?","a":"Helpful answer"},{"q":"Question?","a":"Helpful answer"}]
-}`;
-
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(geminiApiKey)}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: {
-          responseMimeType: "application/json",
-          temperature: 0.7,
-          maxOutputTokens: 8192,
-        },
-      }),
+  const response = await fetch(`${supabaseUrl}/functions/v1/generate-blog-article`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: supabaseAnonKey,
+      Authorization: `Bearer ${supabaseAnonKey}`,
+      "x-blog-publisher-secret": publisherSecret,
     },
-  );
+    body: JSON.stringify({ existingTitles }),
+  });
 
-  if (!response.ok) fail(`Gemini request failed with status ${response.status}`);
-  const data = await response.json();
-  const text = data?.candidates?.[0]?.content?.parts?.map((part) => part.text ?? "").join("").trim();
-  if (!text) fail("Gemini returned no article content");
-  return parseJson(text);
+  const result = await response.json().catch(() => null);
+  if (!response.ok || !result?.article) {
+    fail(result?.error || `Blog generation request failed with status ${response.status}`);
+  }
+  return result.article;
 }
 
 const [existingGenerated, editorialSource] = await Promise.all([

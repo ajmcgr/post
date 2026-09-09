@@ -26,7 +26,8 @@ jobs:
 
       - name: Generate one reviewed-format blog post
         env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFmcW93aGV0cnhyaXRveWp6emN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI4NTMzOTEsImV4cCI6MjA3ODQyOTM5MX0.KBrTfwq8vDaPlHE81YgmKkSHXf6GX9JDFQWFRc4WQCU' }}
+          BLOG_PUBLISHER_SECRET: ${{ secrets.BLOG_PUBLISHER_SECRET }}
         run: node scripts/generate-blog-post.mjs
 
       - name: Commit and publish the article
