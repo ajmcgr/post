@@ -75,12 +75,16 @@ Rules:
       }),
     });
 
-  let response = await requestGeneration("gemini-2.0-flash");
+  let response = await requestGeneration("gemini-2.5-flash");
   if (response.status === 404) {
-    response = await requestGeneration("gemini-2.5-flash");
+    response = await requestGeneration("gemini-2.5-flash-lite");
   }
+  if (response.status === 404) response = await requestGeneration("gemini-2.0-flash");
 
-  if (!response.ok) throw new Error(`Gemini request failed with status ${response.status}`);
+  if (!response.ok) {
+    const details = await response.text();
+    throw new Error(`Gemini request failed with status ${response.status}: ${details.slice(0, 500)}`);
+  }
   const data = await response.json();
   const text = data?.candidates?.[0]?.content?.parts?.map((part: { text?: string }) => part.text ?? "").join("").trim();
   if (!text) throw new Error("Gemini returned no article content");
