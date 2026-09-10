@@ -7,24 +7,8 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-const GEMINI = 'https://generativelanguage.googleapis.com/v1beta/models';
-const TEXT_MODELS = ['gemini-flash-latest', 'gemini-2.5-flash', 'gemini-2.0-flash'];
-const IMAGE_MODELS = ['gemini-2.5-flash-image', 'gemini-2.0-flash-preview-image-generation'];
-
-async function callGemini(apiKey: string, models: string[], body: unknown) {
-  let lastErr = '';
-  for (const model of models) {
-    const res = await fetch(`${GEMINI}/${model}:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    if (res.ok) return await res.json();
-    lastErr = `${model} -> ${res.status}: ${await res.text()}`;
-    if (res.status !== 404 && res.status !== 400) break;
-  }
-  throw new Error(`Gemini failed (${lastErr})`);
-}
+const OPENAI_IMAGES_URL = 'https://api.openai.com/v1/images/generations';
+const OPENAI_IMAGE_MODEL = 'gpt-image-2';
 const BUCKET = 'blog-images';
 const BLOG_INDEX_URL = Deno.env.get('BLOG_INDEX_URL') ?? 'https://trypost.ai/blog-index.json';
 
@@ -139,36 +123,15 @@ async function withRetry<T>(label: string, fn: () => Promise<T>, attempts = 3): 
   throw lastError instanceof Error ? lastError : new Error(String(lastError));
 }
 
-async function buildPrompt(apiKey: string, post: Post): Promise<string> {
+function buildPrompt(post: Post): string {
   const art = artDirection(post.slug);
-  const instruction = `You write art-direction prompts for an editorial tech publication.
-Read the article below and write ONE concise visual prompt (max 45 words) describing a minimal, flat, black-and-white vector pictogram (solid black silhouette shapes on a pure white background) that captures this specific article's core idea.
-The image must be visually distinct from every other article in the series, so lean hard on the assigned art direction below and invent a metaphor unique to this article's subject.
-Describe simple geometric shapes and composition only. Never mention colour, gradients, shading, lighting, 3D, realism, text, words, logos, people, robots or brains.
-
-Assigned art direction (must be followed):
-- Composition: ${art.composition}
-- Primary motif: ${art.motif}
-- Secondary element: ${art.secondMotif}
-- Use of white negative space: ${art.accent}
-- Flatness: ${art.lighting}
-- Surface treatment: ${art.texture}
-
-Title: ${post.title}
-Category: ${post.category}
-Tags: ${post.tags.join(', ')}
-Excerpt: ${post.excerpt}
-Body: ${post.content.slice(0, 2500)}
-
-Return only the prompt.`;
-
-  const json = await callGemini(apiKey, TEXT_MODELS, {
-    contents: [{ role: 'user', parts: [{ text: instruction }] }],
-    generationConfig: { temperature: 1.2, topP: 0.95 },
-  });
-  const text = json?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text ?? '').join(' ').trim();
-  if (!text) throw new Error('Gemini returned no prompt text');
-  return text;
+  return [
+    `Create editorial artwork for an article titled “${post.title}”.`,
+    `The article is about: ${post.excerpt}`,
+    `Represent the idea through ${art.motif}, with ${art.secondMotif} as a secondary element.`,
+    `Use a ${art.composition}.`,
+    `Use ${art.accent}.`,
+  ].join(' ');
 }
 
 async function generateImage(apiKey: string, prompt: string, slug: string): Promise<Uint8Array> {
@@ -183,19 +146,27 @@ async function generateImage(apiKey: string, prompt: string, slug: string): Prom
     'Two colours only: solid black on pure white. It must read as a clean minimal icon, not an illustration or render.',
   ].join(' ');
 
-  const json = await callGemini(apiKey, IMAGE_MODELS, {
-    contents: [{ role: 'user', parts: [{ text: `${prompt}\n\n${style}` }] }],
-    generationConfig: {
-      responseModalities: ['TEXT', 'IMAGE'],
-      imageConfig: { aspectRatio: '16:9' },
-      temperature: 1.15,
-      seed: art.seed % 2147483647,
+  const response = await fetch(OPENAI_IMAGES_URL, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
     },
+    body: JSON.stringify({
+      model: OPENAI_IMAGE_MODEL,
+      prompt: `${prompt}\n\n${style}`,
+      size: '1536x864',
+      quality: 'medium',
+    }),
   });
-  const parts = json?.candidates?.[0]?.content?.parts ?? [];
-  const inline = parts.find((p: { inlineData?: { data?: string } }) => p?.inlineData?.data)?.inlineData;
-  if (!inline?.data) throw new Error('Gemini returned no image data');
-  return Uint8Array.from(atob(inline.data), (c) => c.charCodeAt(0));
+  if (!response.ok) {
+    throw new Error(`OpenAI image request failed (${response.status}): ${await response.text()}`);
+  }
+
+  const json = await response.json();
+  const encoded = json?.data?.[0]?.b64_json;
+  if (!encoded) throw new Error('OpenAI returned no image data');
+  return Uint8Array.from(atob(encoded), (character) => character.charCodeAt(0));
 }
 
 
@@ -228,12 +199,12 @@ async function renderVariants(bytes: Uint8Array) {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
-  const apiKey = Deno.env.get('GEMINI_API_KEY');
+  const apiKey = Deno.env.get('CHATGPT_API_KEY');
   const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
   try {
-    if (!apiKey) throw new Error('Missing GEMINI_API_KEY');
+    if (!apiKey) throw new Error('Missing CHATGPT_API_KEY');
 
     const body = await req.json().catch(() => ({}));
     const only: string[] | undefined = Array.isArray(body.slugs) ? body.slugs : undefined;
@@ -265,7 +236,7 @@ Deno.serve(async (req) => {
       processed += 1;
 
       try {
-        const prompt = await withRetry(`prompt:${post.slug}`, () => buildPrompt(apiKey, post));
+        const prompt = buildPrompt(post);
         const raw = await withRetry(`image:${post.slug}`, () => generateImage(apiKey, prompt, post.slug));
         const variants = await renderVariants(raw);
 
