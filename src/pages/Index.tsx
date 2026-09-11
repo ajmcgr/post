@@ -17,7 +17,7 @@ import instagramLogo from "@/assets/instagram.svg";
 import youtubeLogo from "@/assets/youtube.svg";
 import threadsLogo from "@/assets/threads.svg";
 import tiktokLogo from "@/assets/tiktok.svg";
-import { productPlans, type BillingInterval } from "@/data/plans";
+import { purchasablePlans, type BillingInterval } from "@/data/plans";
 import { trackEvent } from "@/lib/analytics";
 
 function GracefulImage({
@@ -102,12 +102,12 @@ const Index = () => {
       {/* Hero Section */}
       <section className="container mx-auto px-6 py-12 md:py-20 text-center">
         <h1 className="font-reckless text-4xl sm:text-5xl md:text-7xl font-medium mb-4 md:mb-6 tracking-tight text-black">
-          Create Content Once.
+          The simple publishing queue
           <br />
-          <span>Schedule Everywhere.</span>
+          <span>for founders and creators.</span>
         </h1>
         <p className="text-base md:text-xl text-muted-foreground mb-6 md:mb-8 max-w-2xl mx-auto">
-          Post helps creators and brands plan, queue, and publish content across all social platforms from one simple dashboard.
+          Create, schedule, and publish consistently across seven social channels from one focused dashboard.
         </p>
         <div className="flex flex-col md:flex-row items-center justify-center gap-3">
           <Link to="/signup" onClick={() => trackEvent("homepage_cta_clicked", { location: "hero", destination: "signup" })}>
@@ -214,9 +214,9 @@ const Index = () => {
               Post to all platforms <span>instantly</span>
             </h2>
             <p className="text-muted-foreground mb-6">
-              Publish everywhere in 30 seconds, not 30 minutes. Manage all your personal and brand
-              accounts without switching back and forth. Connect your social media accounts and publish
-              your content across all platforms with a single click — no learning curve required.
+              Publish everywhere in 30 seconds, not 30 minutes. Keep your publishing work in one place
+              instead of switching between seven separate apps. Connect your accounts and publish to the
+              channels that matter with a single click.
             </p>
             <div className="flex gap-3">
               <Link to="/signup"><Button>Start posting <ArrowRight className="w-4 h-4 ml-1" /></Button></Link>
@@ -389,7 +389,7 @@ const Index = () => {
           Simple, transparent pricing
         </h2>
         <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-          Choose the plan that fits your needs. All plans include a 14-day free trial.
+          Choose the plan that fits your needs. Paid plans include a 14-day free trial.
         </p>
 
         {/* Billing toggle */}
@@ -414,8 +414,8 @@ const Index = () => {
         </div>
 
         {/* Pricing Cards */}
-        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {productPlans.map((plan) => {
+        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          {purchasablePlans.map((plan) => {
             const isFree = plan.monthly === 0;
             const amount = billing === "monthly" ? plan.monthly : plan.yearly;
             return (

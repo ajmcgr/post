@@ -100,27 +100,29 @@ const Home = () => {
         </Card>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        {postTypes.map((type) => (
-          <Card
-            key={type.title}
-            className="border-2 border-dashed hover:border-primary/50 transition-all cursor-pointer group"
-            onClick={() => navigate(type.route)}
-          >
-            <CardContent className="flex flex-col items-center justify-center py-12 px-6">
-              <div className="mb-4 text-muted-foreground/30 group-hover:text-muted-foreground/50 transition-colors">
-                <type.icon className="w-20 h-20 stroke-[1.5]" />
-              </div>
-              <h3 className="text-xl font-semibold mb-6">{type.title}</h3>
-              <div className="flex flex-wrap gap-2 justify-center opacity-40">
-                {type.platforms.map((platform, idx) => (
-                  <img key={idx} src={platform} alt="" className="w-5 h-5" />
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {hasConnections && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {postTypes.map((type) => (
+            <Card
+              key={type.title}
+              className="border-2 border-dashed hover:border-primary/50 transition-all cursor-pointer group"
+              onClick={() => navigate(type.route)}
+            >
+              <CardContent className="flex flex-col items-center justify-center py-12 px-6">
+                <div className="mb-4 text-muted-foreground/30 group-hover:text-muted-foreground/50 transition-colors">
+                  <type.icon className="w-20 h-20 stroke-[1.5]" />
+                </div>
+                <h3 className="text-xl font-semibold mb-6">{type.title}</h3>
+                <div className="flex flex-wrap gap-2 justify-center opacity-40">
+                  {type.platforms.map((platform, idx) => (
+                    <img key={idx} src={platform} alt="" className="w-5 h-5" />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
     </div>
   );

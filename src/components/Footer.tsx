@@ -40,8 +40,8 @@ const Footer = () => {
               <li><Link to="/resources/instagram-algorithm-2026" className="text-muted-foreground hover:text-foreground">Instagram Algorithm</Link></li>
               <li><Link to="/resources/repurpose-one-video-into-ten-posts" className="text-muted-foreground hover:text-foreground">Repurpose Video</Link></li>
               <li><Link to="/resources/writing-hooks-that-stop-the-scroll" className="text-muted-foreground hover:text-foreground">Writing Hooks</Link></li>
-              <li><Link to="/resources/linkedin-content-strategy" className="text-muted-foreground hover:text-foreground">LinkedIn Strategy</Link></li>
-              <li><Link to="/resources/tiktok-growth-playbook" className="text-muted-foreground hover:text-foreground">TikTok Growth</Link></li>
+              <li><Link to="/resources/linkedin-content-strategy-for-founders" className="text-muted-foreground hover:text-foreground">LinkedIn Strategy</Link></li>
+              <li><Link to="/resources/tiktok-vs-reels-vs-shorts" className="text-muted-foreground hover:text-foreground">TikTok Growth</Link></li>
               <li><Link to="/resources/social-media-analytics-that-matter" className="text-muted-foreground hover:text-foreground">Analytics That Matter</Link></li>
               <li><Link to="/resources" className="text-foreground font-medium hover:text-primary">View All Resources →</Link></li>
             </ul>
