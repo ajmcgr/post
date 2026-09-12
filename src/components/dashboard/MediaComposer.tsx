@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import MediaPreview from '@/components/dashboard/MediaPreview';
+import ProUpgradePrompt from '@/components/dashboard/ProUpgradePrompt';
 import {
   compactMedia,
   getNextQueueSlot,
@@ -251,17 +252,11 @@ const MediaComposer = ({ kind, title }: MediaComposerProps) => {
 
   if (plan === 'free') {
     return (
-      <div className="container mx-auto px-6 py-8">
-        <Card className="mx-auto max-w-xl p-8 text-center">
-          <h1 className="text-2xl font-bold">{title} is available on Pro</h1>
-          <p className="mt-3 text-muted-foreground">
-            Upgrade to upload images and videos, publish media posts, and use bulk workflows.
-          </p>
-          <Button asChild className="mt-6">
-            <Link to="/dashboard/account/plans?plan=pro">View Pro plan</Link>
-          </Button>
-        </Card>
-      </div>
+      <ProUpgradePrompt
+        feature={title}
+        description="Upload images and videos, publish media posts, and use bulk workflows across all seven social platforms."
+        source={isVideo ? 'video_composer_gate' : 'image_composer_gate'}
+      />
     );
   }
 

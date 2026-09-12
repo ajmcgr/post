@@ -10,8 +10,8 @@ import tiktokIcon from "@/assets/tiktok.svg";
 import twitterIcon from "@/assets/x.svg";
 import threadsIcon from "@/assets/threads.svg";
 import youtubeIcon from "@/assets/youtube.svg";
-import { Button } from "@/components/ui/button";
 import { useSubscription } from "@/hooks/useSubscription";
+import ProUpgradePrompt from "@/components/dashboard/ProUpgradePrompt";
 
 const BulkTools = () => {
   const { plan, loading } = useSubscription();
@@ -30,13 +30,11 @@ const BulkTools = () => {
 
   if (plan === "free") {
     return (
-      <div className="container mx-auto px-6 py-8">
-        <Card className="mx-auto max-w-xl p-8 text-center">
-          <h1 className="text-3xl font-bold">Bulk publishing is available on Pro</h1>
-          <p className="mt-3 text-muted-foreground">Upgrade to create and schedule image or video posts in batches.</p>
-          <Button asChild className="mt-6"><Link to="/dashboard/account/plans?plan=pro">View Pro plan</Link></Button>
-        </Card>
-      </div>
+      <ProUpgradePrompt
+        feature="Bulk publishing"
+        description="Create and schedule image or video posts in batches instead of building every post one at a time."
+        source="bulk_tools_gate"
+      />
     );
   }
 

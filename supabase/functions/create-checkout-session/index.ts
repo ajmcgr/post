@@ -43,11 +43,14 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await admin.auth.getUser(token);
     if (userError || !user?.email) throw new Error("Authentication required");
 
-    const { plan, billing } = await req.json();
+    const { plan, billing, source: requestedSource } = await req.json();
     if (plan !== "pro") throw new Error("This plan is not available for new subscriptions");
     const envName = priceEnv[`${plan}:${billing}`];
     const priceId = envName ? Deno.env.get(envName) : null;
     if (!priceId) throw new Error("This plan is not configured for checkout");
+    const source = typeof requestedSource === "string" && /^[a-z0-9_-]{1,80}$/i.test(requestedSource)
+      ? requestedSource
+      : "plans";
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     const { data: existing } = await admin
@@ -103,8 +106,8 @@ serve(async (req) => {
         metadata: { user_id: user.id, plan },
       },
       metadata: { user_id: user.id, plan },
-      success_url: `${origin}/dashboard/account/plans?checkout=success`,
-      cancel_url: `${origin}/dashboard/account/plans?checkout=cancelled`,
+      success_url: `${origin}/dashboard/account/plans?checkout=success&source=${encodeURIComponent(source)}`,
+      cancel_url: `${origin}/dashboard/account/plans?checkout=cancelled&source=${encodeURIComponent(source)}`,
     });
 
     return new Response(JSON.stringify({ url: session.url }), {

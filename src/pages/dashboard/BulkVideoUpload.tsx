@@ -11,8 +11,8 @@ import MediaPreview from "@/components/dashboard/MediaPreview";
 import BulkPlatformSelector from "@/components/dashboard/BulkPlatformSelector";
 import { Loader2, FileVideo, X, Save } from "lucide-react";
 import { toast } from "sonner";
-import { Link } from "react-router-dom";
 import { useSubscription } from "@/hooks/useSubscription";
+import ProUpgradePrompt from "@/components/dashboard/ProUpgradePrompt";
 
 interface VideoItem {
   id: string;
@@ -40,13 +40,11 @@ const BulkVideoUpload = () => {
   if (subscriptionLoading) return null;
   if (plan === "free") {
     return (
-      <div className="container mx-auto px-6 py-8">
-        <Card className="mx-auto max-w-xl p-8 text-center">
-          <h1 className="text-3xl font-bold">Bulk video publishing is available on Pro</h1>
-          <p className="mt-3 text-muted-foreground">Upgrade to create and schedule video posts in batches.</p>
-          <Button asChild className="mt-6"><Link to="/dashboard/account/plans?plan=pro">View Pro plan</Link></Button>
-        </Card>
-      </div>
+      <ProUpgradePrompt
+        feature="Bulk video publishing"
+        description="Upload multiple videos and schedule them as a campaign instead of publishing one at a time."
+        source="bulk_video_gate"
+      />
     );
   }
 

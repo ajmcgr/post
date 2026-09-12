@@ -12,6 +12,7 @@ import { trackEvent } from "@/lib/analytics";
 const Plans = () => {
   const [searchParams] = useSearchParams();
   const initialBilling = searchParams.get("billing") === "yearly" ? "yearly" : "monthly";
+  const source = searchParams.get("source") || "plans";
   const [billing, setBilling] = useState<BillingInterval>(initialBilling);
   const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
   const { plan: currentPlan, status, currentPeriodEnd, cancelAtPeriodEnd, refresh } = useSubscription();
@@ -22,12 +23,12 @@ const Plans = () => {
   useEffect(() => {
     if (searchParams.get("checkout") === "success") {
       toast.success("Checkout completed. Your plan will update in a moment.");
-      trackEvent("checkout_returned");
+      trackEvent("checkout_returned", { source });
       const timer = window.setTimeout(refresh, 1500);
       return () => window.clearTimeout(timer);
     }
-    if (searchParams.get("checkout") === "cancelled") trackEvent("checkout_cancelled");
-  }, [refresh, searchParams]);
+    if (searchParams.get("checkout") === "cancelled") trackEvent("checkout_cancelled", { source });
+  }, [refresh, searchParams, source]);
 
   useEffect(() => {
     if (
@@ -35,15 +36,15 @@ const Plans = () => {
       currentPlan !== "free" &&
       ["active", "trialing"].includes(status)
     ) {
-      trackEvent("subscription_confirmed", { plan: currentPlan, status });
+      trackEvent("subscription_confirmed", { plan: currentPlan, status, source });
     }
-  }, [currentPlan, searchParams, status]);
+  }, [currentPlan, searchParams, source, status]);
 
   const startCheckout = async (plan: PlanId) => {
     setLoadingPlan(plan);
-    trackEvent("checkout_started", { plan, billing });
+    trackEvent("checkout_started", { plan, billing, source });
     const { data, error } = await supabase.functions.invoke("create-checkout-session", {
-      body: { plan, billing },
+      body: { plan, billing, source },
     });
     setLoadingPlan(null);
     if (error || !data?.url) {

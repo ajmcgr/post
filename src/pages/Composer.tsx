@@ -436,7 +436,17 @@ const Composer = () => {
               <Label className="text-sm text-muted-foreground">Media (images / video)</Label>
               {plan === 'free' ? (
                 <Button asChild variant="outline" size="sm">
-                  <Link to="/dashboard/account/plans?plan=pro">Media on Pro</Link>
+                  <Link
+                    to="/dashboard/account/plans?plan=pro&source=text_composer_media"
+                    onClick={() => trackEvent('monetization_surface_clicked', {
+                      surface: 'text_composer_media_gate',
+                      source: 'text_composer_media',
+                      feature: 'media_upload',
+                      plan: 'pro',
+                    })}
+                  >
+                    Start Pro trial
+                  </Link>
                 </Button>
               ) : (
                 <>
