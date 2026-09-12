@@ -9,6 +9,7 @@ import {
   productFacts,
   supportedPlatforms,
 } from "../src/data/aiInfo";
+import { schedulerPages } from "../src/data/schedulerPages";
 
 const absoluteUrl = (path: string) => `${productFacts.website}${path}`;
 
@@ -45,6 +46,11 @@ ${audiences.map((audience) => `- [${audience.title}](${absoluteUrl("/ai-info#who
 ## Supported platforms
 
 ${supportedPlatforms.map((platform) => `- [${platform.name}](${absoluteUrl(platform.path)}): Official Post integration overview.`).join("\n")}
+
+## Scheduling workflows
+
+- [All scheduling guides](${absoluteUrl("/schedule")}): Index of qualified platform and post-format workflows supported by Post.
+${schedulerPages.map((page) => `- [${page.platform.name} ${page.name}](${absoluteUrl(page.path)}): ${page.supportStatement}`).join("\n")}
 
 ## Optional
 

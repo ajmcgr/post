@@ -24,10 +24,12 @@ const Footer = () => {
           <div>
             <h4 className="font-medium text-sm mb-4">Platforms</h4>
             <ul className="space-y-2 text-sm">
+              <li><Link to="/schedule" className="text-foreground font-medium hover:text-primary">Scheduling Guides →</Link></li>
               <li><Link to="/platforms/instagram" className="text-muted-foreground hover:text-foreground">Instagram</Link></li>
               <li><Link to="/platforms/youtube" className="text-muted-foreground hover:text-foreground">YouTube</Link></li>
               <li><Link to="/platforms/tiktok" className="text-muted-foreground hover:text-foreground">TikTok</Link></li>
               <li><Link to="/platforms/twitter" className="text-muted-foreground hover:text-foreground">X (Twitter)</Link></li>
+              <li><Link to="/schedule/linkedin/text-posts" className="text-muted-foreground hover:text-foreground">LinkedIn</Link></li>
               <li><Link to="/platforms/facebook" className="text-muted-foreground hover:text-foreground">Facebook</Link></li>
               <li><Link to="/platforms/threads" className="text-muted-foreground hover:text-foreground">Threads</Link></li>
             </ul>

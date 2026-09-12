@@ -1,6 +1,7 @@
 import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import Header from "@/components/Header";
+import { Helmet } from "react-helmet-async";
 
 const NotFound = () => {
   const location = useLocation();
@@ -11,6 +12,10 @@ const NotFound = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Helmet>
+        <title>Page not found | Post</title>
+        <meta name="robots" content="noindex,nofollow" />
+      </Helmet>
       <Header />
       <div className="flex items-center justify-center pt-32">
         <div className="text-center">

@@ -66,6 +66,8 @@ import BulkVideoUpload from "./pages/dashboard/BulkVideoUpload";
 import NotFound from "./pages/NotFound";
 import Reserve from "./pages/Reserve";
 import AIInfo from "./pages/AIInfo";
+import SchedulerDirectory from "./pages/SchedulerDirectory";
+import SchedulerLanding from "./pages/SchedulerLanding";
 
 const App = () => (
   <TooltipProvider>
@@ -85,6 +87,8 @@ const App = () => (
       <Route path="/oauth/:platform/callback" element={<OAuthCallback />} />
       <Route path="/reserve" element={<Reserve />} />
       <Route path="/ai-info" element={<AIInfo />} />
+      <Route path="/schedule" element={<SchedulerDirectory />} />
+      <Route path="/schedule/:platform/:format" element={<SchedulerLanding />} />
       
       {/* Dashboard Routes with Sidebar */}
       <Route path="/dashboard" element={<DashboardLayout />}>

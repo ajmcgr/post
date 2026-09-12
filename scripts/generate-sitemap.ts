@@ -4,6 +4,7 @@ import { writeFileSync } from "fs";
 import { resolve } from "path";
 import { blogPosts } from "../src/data/blog";
 import { resources } from "../src/data/resources";
+import { schedulerPages } from "../src/data/schedulerPages";
 
 const BASE_URL = "https://trypost.ai";
 
@@ -23,6 +24,7 @@ const staticPaths = [
   "/resources",
   "/blog",
   "/tools",
+  "/schedule",
   "/reserve",
   "/privacy",
   "/terms",
@@ -59,6 +61,11 @@ const entries: SitemapEntry[] = [
     path: `/resources/${r.slug}`,
     changefreq: "monthly" as const,
     priority: "0.6",
+  })),
+  ...schedulerPages.map((page) => ({
+    path: page.path,
+    changefreq: "monthly" as const,
+    priority: "0.7",
   })),
 ];
 

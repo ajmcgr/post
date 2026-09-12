@@ -21,6 +21,12 @@ const Signup = () => {
   const query = new URLSearchParams(location.search);
   const selectedPlan = query.get("plan");
   const billing = query.get("billing");
+  const funnelParams = {
+    source: query.get("source") ?? undefined,
+    page_type: query.get("pagetype") ?? undefined,
+    platform: query.get("platform") ?? undefined,
+    format: query.get("format") ?? undefined,
+  };
   const isProTrial = selectedPlan === "pro";
   const destination = selectedPlan === "pro"
     ? `/dashboard/account/plans?plan=${selectedPlan}&billing=${billing === "yearly" ? "yearly" : "monthly"}`
@@ -35,10 +41,10 @@ const Signup = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    trackEvent("signup_started", { method: "email", selected_plan: selectedPlan ?? "free" });
+    trackEvent("signup_started", { method: "email", selected_plan: selectedPlan ?? "free", ...funnelParams });
     const { error } = await signUp(email, password, fullName);
     if (!error) {
-      trackEvent("signup_completed", { method: "email", selected_plan: selectedPlan ?? "free" });
+      trackEvent("signup_completed", { method: "email", selected_plan: selectedPlan ?? "free", ...funnelParams });
       navigate(destination);
     }
     setLoading(false);
@@ -46,7 +52,7 @@ const Signup = () => {
 
   const handleGoogleSignUp = async () => {
     setLoading(true);
-    trackEvent("signup_started", { method: "google", selected_plan: selectedPlan ?? "free" });
+    trackEvent("signup_started", { method: "google", selected_plan: selectedPlan ?? "free", ...funnelParams });
     await signInWithGoogle(destination);
     setLoading(false);
   };
