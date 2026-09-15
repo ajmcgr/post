@@ -9,6 +9,8 @@ import { UserMenu } from "@/components/UserMenu";
 import { initNotificationsPatch } from "@/lib/notifications";
 import { Loader2 } from "lucide-react";
 import postLogo from "@/assets/post-logo.png";
+import { claimLaunchAttribution } from "@/lib/launchAttribution";
+import { trackEvent } from "@/lib/analytics";
 
 initNotificationsPatch();
 
@@ -22,6 +24,15 @@ const DashboardLayout = () => {
       navigate("/login");
     }
   }, [user, loading, navigate]);
+
+  useEffect(() => {
+    if (!user) return;
+    void claimLaunchAttribution()
+      .then((claimed) => {
+        if (claimed) trackEvent('launch_post_signup_completed', { campaign: 'post_launch_analytics' });
+      })
+      .catch((error) => console.warn('Could not claim Launch referral attribution:', error));
+  }, [user]);
 
   if (loading) {
     return (

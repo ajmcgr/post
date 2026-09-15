@@ -9,6 +9,7 @@ import Footer from "@/components/Footer";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
+import { captureLaunchAttribution, recordLaunchArrival } from "@/lib/launchAttribution";
 
 const Signup = () => {
   const [fullName, setFullName] = useState("");
@@ -23,11 +24,13 @@ const Signup = () => {
   const billing = query.get("billing");
   const funnelParams = {
     source: query.get("source") ?? undefined,
+    campaign: query.get("campaign") ?? undefined,
     page_type: query.get("pagetype") ?? undefined,
     platform: query.get("platform") ?? undefined,
     format: query.get("format") ?? undefined,
   };
   const isProTrial = selectedPlan === "pro";
+  const isLaunchReferral = query.get("source") === "launch" && query.get("campaign") === "post_launch_analytics";
   const destination = selectedPlan === "pro"
     ? `/dashboard/account/plans?plan=${selectedPlan}&billing=${billing === "yearly" ? "yearly" : "monthly"}`
     : "/dashboard";
@@ -37,6 +40,13 @@ const Signup = () => {
       navigate(destination);
     }
   }, [user, navigate, destination]);
+
+  useEffect(() => {
+    const attribution = captureLaunchAttribution(location.search);
+    if (!attribution) return;
+    trackEvent("launch_post_arrived", { campaign: "post_launch_analytics" });
+    void recordLaunchArrival(attribution).catch((error) => console.warn('Could not record Launch referral arrival:', error));
+  }, [location.search]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,10 +74,12 @@ const Signup = () => {
         <div className="w-full max-w-md">
           <Card className="p-8 rounded-3xl border-2">
             <h1 className="text-3xl font-bold mb-2 text-center">
-              {isProTrial ? "Start your Pro trial" : "Get started free"}
+              {isLaunchReferral ? "Keep your launch momentum going" : isProTrial ? "Start your Pro trial" : "Get started free"}
             </h1>
             <p className="text-muted-foreground text-center mb-8">
-              {isProTrial
+              {isLaunchReferral
+                ? "Schedule follow-up promotion for your newly launched product across your social channels."
+                : isProTrial
                 ? "Create your account, then start your 14-day Pro trial securely."
                 : "Create your account in seconds"}
             </p>
