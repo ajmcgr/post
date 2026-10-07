@@ -69,7 +69,7 @@ const Footer = () => {
             </ul>
           </div>
         </div>
-        <div className="mt-8 border-t pt-8">
+        <div className="mt-8 pt-8">
           <a
             href="https://tryrocket.ai/apps/7fde2ae4-5ef1-4c00-88b1-585a7c060b62"
             target="_blank"

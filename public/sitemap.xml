@@ -136,6 +136,24 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://trypost.ai/blog/quality-over-quantity-calendar</loc>
+    <lastmod>2026-09-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://trypost.ai/blog/repurpose-long-form-video-into-a-week-of-native-posts</loc>
+    <lastmod>2026-09-21</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://trypost.ai/blog/planning-content-launches-events-evergreen</loc>
+    <lastmod>2026-09-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://trypost.ai/blog/adapt-one-campaign-across-linkedin-instagram-x-threads-tiktok-youtube</loc>
     <lastmod>2026-09-09</lastmod>
     <changefreq>monthly</changefreq>
