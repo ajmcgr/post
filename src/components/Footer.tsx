@@ -69,8 +69,24 @@ const Footer = () => {
             </ul>
           </div>
         </div>
-        <div className="mt-8 pt-8 text-center text-sm text-muted-foreground">
-          Copyright © 2026 Works App, Inc. Built with 🫶🏻 by <a href="http://x.com/alexmacgregor__/" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">Alex</a>.
+        <div className="mt-8 border-t pt-8">
+          <a
+            href="https://tryrocket.ai/apps/7fde2ae4-5ef1-4c00-88b1-585a7c060b62"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mx-auto block w-[220px] max-w-full"
+          >
+            <img
+              src="https://tryrocket.ai/badges/find-it-on-rocket-black.svg"
+              alt="Discover it on Rocket"
+              width="220"
+              height="68"
+              className="block h-auto max-w-full"
+            />
+          </a>
+          <div className="mt-6 text-center text-sm text-muted-foreground">
+            Copyright © 2026 Works App, Inc. Built with 🫶🏻 by <a href="http://x.com/alexmacgregor__/" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">Alex</a>.
+          </div>
         </div>
       </div>
     </footer>
