@@ -71,7 +71,7 @@ const Footer = () => {
         </div>
         <div className="mt-8 pt-8">
           <a
-            href="https://tryrocket.ai/apps/7fde2ae4-5ef1-4c00-88b1-585a7c060b62"
+            href="https://tryrocket.ai/apps/post"
             target="_blank"
             rel="noopener noreferrer"
             className="mx-auto block w-[160px] max-w-full"
